@@ -1,0 +1,9 @@
+rules:
+  - type: import
+    name: no-experimental-imports
+    packages:
+      - "example/**/*.go"
+    forbidden:
+      - "**/example/acme/experimental"
+    exceptions:
+      - "example/acme/internal/shared"

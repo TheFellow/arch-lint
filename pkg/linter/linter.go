@@ -1,89 +1,66 @@
 package linter
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"os/exec"
+	"go/parser"
+	"go/token"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/TheFellow/go-arch-lint/pkg/config"
 	"github.com/bmatcuk/doublestar/v4"
 )
 
-// GoPackage mirrors `go list -json` output
-type GoPackage struct {
-	ImportPath string   `json:"ImportPath"`
-	Imports    []string `json:"Imports"`
-}
+var debug = false
 
-// Violation represents a rule violation
-type Violation struct {
-	Pkg     string
-	Import  string
-	Rule    string
-	Message string
-}
-
-func (v Violation) String() string {
-	return fmt.Sprintf("%s imports %s [%s]: %s", v.Pkg, v.Import, v.Rule, v.Message)
-}
-
-// hasCommonAncestor checks if two import paths share a directory prefix
-func hasCommonAncestor(a, b string) bool {
-	pa := strings.Split(a, "/")
-	pb := strings.Split(b, "/")
-	min := len(pa)
-	if len(pb) < min {
-		min = len(pb)
+func log(str string, args ...any) {
+	if debug {
+		fmt.Printf(str, args...)
 	}
-	for i := 0; i < min; i++ {
-		if pa[i] != pb[i] {
-			return i > 0
-		}
-	}
-	return true
 }
 
-// Run invokes `go list -json` on user-specified package patterns and enforces forbidden import rules
+// Run enforces forbidden import rules by analyzing files specified by glob patterns
 func Run(cfg *config.Config) ([]Violation, error) {
-	// compile unique package patterns
-	patterns := []string{""}
-	for _, rule := range cfg.Rules {
-		patterns = append(patterns, rule.Packages...)
-	}
-	// exec go list
-	args := append([]string{"list", "-json"}, patterns...)
-	cmd := exec.Command("go", args...)
-	out, err := cmd.Output()
-	if err != nil {
-		return nil, fmt.Errorf("failed to run go list: %w", err)
-	}
-
-	// decode packages
-	dec := json.NewDecoder(bytes.NewReader(out))
-	pkgMap := make(map[string]*GoPackage)
-	for {
-		var gp GoPackage
-		if err := dec.Decode(&gp); err != nil {
-			break
-		}
-		pkgMap[gp.ImportPath] = &gp
-	}
-
 	var violations []Violation
+
 	for _, rule := range cfg.Rules {
+		log("Checking rule: %s\n", rule.Name)
+
 		for _, pkgPattern := range rule.Packages {
-			for importPath, gp := range pkgMap {
-				if ok, _ := doublestar.Match(pkgPattern, importPath); !ok {
-					continue
+			log("--Checking package pattern: %s\n", pkgPattern)
+
+			// Resolve file paths using the glob pattern
+			files, err := doublestar.Glob(os.DirFS("."), pkgPattern)
+			if err != nil {
+				return nil, fmt.Errorf("failed to resolve glob pattern %s: %w", pkgPattern, err)
+			}
+			//fmt.Println(os.Getwd())
+			log("  --Found %d files\n", len(files))
+
+			for _, file := range files {
+				log("  --Checking file: %s\n", file)
+
+				// Parse the file to extract imports and package name
+				fset := token.NewFileSet()
+				node, err := parser.ParseFile(fset, file, nil, parser.ImportsOnly)
+				if err != nil {
+					return nil, fmt.Errorf("failed to parse file %s: %w", file, err)
 				}
 
-				for _, imp := range gp.Imports {
-					// forbidden?
+				// Construct the package path from the file path
+				packagePath := strings.TrimPrefix(filepath.Dir(file), "./")
+				packagePath = strings.ReplaceAll(packagePath, string(os.PathSeparator), "/")
+
+				for _, imp := range node.Imports {
+					importPath := strings.Trim(imp.Path.Value, `"`)
+					log("    --Found import: %s\n", importPath)
+
+					// Check imports for forbidden rules
 					forbidden := false
 					for _, pat := range rule.Forbidden {
-						if ok, _ := doublestar.Match(pat, imp); ok {
+						if ok, _ := doublestar.Match(pat, importPath); ok {
+							log("    --Forbidden by: %s\n", pat)
 							forbidden = true
 							break
 						}
@@ -92,27 +69,29 @@ func Run(cfg *config.Config) ([]Violation, error) {
 						continue
 					}
 
-					// exceptions
-					exc := false
+					// Check if the source package is in exceptions
+					exception := false
 					for _, pat := range rule.Exceptions {
-						if ok, _ := doublestar.Match(pat, imp); ok {
-							exc = true
+						if ok, _ := doublestar.Match(pat, packagePath); ok {
+							log("    --Exempted by: %s\n", pat)
+							exception = true
 							break
 						}
 					}
-					if exc {
+					if exception {
 						continue
 					}
 
-					// allow same ancestor
-					if hasCommonAncestor(importPath, imp) {
-						continue
-					}
-
-					violations = append(violations, Violation{Pkg: importPath, Import: imp, Rule: rule.Name, Message: "forbidden import"})
+					// If the import is forbidden and not in exceptions, add a violation
+					violations = append(violations, Violation{
+						File:   file,
+						Import: importPath,
+						Rule:   rule.Name,
+					})
 				}
 			}
 		}
 	}
+
 	return violations, nil
 }

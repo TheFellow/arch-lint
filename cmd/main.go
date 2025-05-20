@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 
@@ -30,11 +31,11 @@ func main() {
 			}
 			if len(violations) > 0 {
 				for _, v := range violations {
-					log.Println(v)
+					fmt.Println(v)
 				}
 				os.Exit(1)
 			}
-			log.Println("✔ arch-lint: no forbidden imports found.")
+			fmt.Println("✔ arch-lint: no forbidden imports found.")
 			return nil
 		},
 	}
