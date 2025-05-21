@@ -1,9 +1,9 @@
-package shared
+package exception
 
 import (
 	"fmt"
 
-	"github.com/TheFellow/go-arch-lint/example/acme/experimental"
+	"github.com/TheFellow/go-arch-lint/example/alpha/experimental"
 )
 
 func Test() {

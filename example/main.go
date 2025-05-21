@@ -1,7 +1,7 @@
 package main
 
-import "github.com/TheFellow/go-arch-lint/example/acme"
+import "github.com/TheFellow/go-arch-lint/example/alpha"
 
 func main() {
-	acme.DoTest()
+	alpha.DoTest()
 }
