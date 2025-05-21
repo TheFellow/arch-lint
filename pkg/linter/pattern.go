@@ -7,6 +7,30 @@ import (
 )
 
 func matchPattern(pattern, path string) (map[string]string, bool) {
+	regexPattern := escapePattern(pattern)
+
+	re, err := regexp.Compile(regexPattern)
+	if err != nil {
+		return nil, false
+	}
+
+	// Match the path against the regex
+	match := re.FindStringSubmatch(path)
+	if match == nil {
+		return nil, false
+	}
+
+	// Extract named groups into a map
+	vars := make(map[string]string)
+	for i, name := range re.SubexpNames() {
+		if i > 0 && name != "" {
+			vars[name] = match[i]
+		}
+	}
+	return vars, true
+}
+
+func escapePattern(pattern string) string {
 	// Split the pattern into segments
 	segments := strings.Split(pattern, "/")
 	for i, segment := range segments {
@@ -40,41 +64,40 @@ func matchPattern(pattern, path string) (map[string]string, bool) {
 		regexPattern = strings.TrimSuffix(regexPattern, "/.*") + "/?.*"
 	}
 	regexPattern = "^" + regexPattern + "$"
-
-	re, err := regexp.Compile(regexPattern)
-	if err != nil {
-		return nil, false
-	}
-
-	// Match the path against the regex
-	match := re.FindStringSubmatch(path)
-	if match == nil {
-		return nil, false
-	}
-
-	// Extract named groups into a map
-	vars := make(map[string]string)
-	for i, name := range re.SubexpNames() {
-		if i > 0 && name != "" {
-			vars[name] = match[i]
-		}
-	}
-	return vars, true
+	return regexPattern
 }
 
 func replaceVariables(pattern string, vars map[string]string) string {
-	for key, value := range vars {
-		// Handle negated variables
-		negatedPlaceholder := fmt.Sprintf("{!%s}", key)
-		if strings.Contains(pattern, negatedPlaceholder) {
-			// Replace negated variable with a regex that excludes the value
-			pattern = strings.ReplaceAll(pattern, negatedPlaceholder,
-				fmt.Sprintf("(?!%s)[^/]+", regexp.QuoteMeta(value)))
-		} else {
-			// Replace normal variables
-			placeholder := fmt.Sprintf("{%s}", key)
-			pattern = strings.ReplaceAll(pattern, placeholder, value)
+	negated := false
+	segments := strings.Split(pattern, "/")
+	for i, segment := range segments {
+		for key, value := range vars {
+			// Handle negated variables
+			negatedPlaceholder := fmt.Sprintf("{!%s}", key)
+			if segment == negatedPlaceholder {
+				var sb strings.Builder
+				for _, c := range value {
+					sb.WriteRune('[')
+					sb.WriteRune('^')
+					sb.WriteRune(c)
+					sb.WriteRune(']')
+				}
+				segment = sb.String()
+				negated = true
+			}
+			if segment == fmt.Sprintf("{%s}", key) {
+				// Replace normal variables
+				placeholder := fmt.Sprintf("{%s}", key)
+				segment = strings.ReplaceAll(segment, placeholder, value)
+			}
 		}
+		// Update the segment
+		segments[i] = segment
 	}
-	return pattern
+
+	if negated {
+		log("        negated: %s ==> %s\n", pattern, strings.Join(segments, "/"))
+	}
+	// Recombine the segments into the final pattern
+	return strings.Join(segments, "/")
 }

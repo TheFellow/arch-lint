@@ -7,6 +7,7 @@ import (
 	"go/token"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/TheFellow/go-arch-lint/pkg/config"
@@ -98,9 +99,11 @@ func Run(cfg *config.Config) ([]Violation, error) {
 				exception := false
 				for _, pat := range spec.Rules.Except {
 					exceptPattern := replaceVariables(pat, capturedVars)
-					log("      check: %q\n", exceptPattern)
-					log("      package: %q\n", packagePath)
-					if _, ok := matchPattern(exceptPattern, packagePath); ok {
+					re, err := regexp.Compile(escapePattern(exceptPattern))
+					if err != nil {
+						return nil, fmt.Errorf("failed to compile regex %q: %w", exceptPattern, err)
+					}
+					if ok := re.MatchString(packagePath); ok {
 						log("      exempt: %q\n", pat)
 						exception = true
 						break
