@@ -112,6 +112,18 @@ func TestReplaceVariables(t *testing.T) {
 			vars:     map[string]string{"feature": "beta"},
 			expected: "",
 		},
+		{
+			name:     "negated variable replacement",
+			pattern:  "example/{!feature}/path",
+			vars:     map[string]string{"feature": "beta"},
+			expected: "example/(?!beta)[^/]+/path",
+		},
+		{
+			name:     "negated variable not in map",
+			pattern:  "example/{!missing}/path",
+			vars:     map[string]string{"feature": "beta"},
+			expected: "example/{!missing}/path",
+		},
 	}
 
 	for _, tt := range tests {

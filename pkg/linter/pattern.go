@@ -37,8 +37,17 @@ func matchPattern(pattern, path string) (map[string]string, bool) {
 
 func replaceVariables(pattern string, vars map[string]string) string {
 	for key, value := range vars {
-		placeholder := fmt.Sprintf("{%s}", key)
-		pattern = strings.ReplaceAll(pattern, placeholder, value)
+		// Handle negated variables
+		negatedPlaceholder := fmt.Sprintf("{!%s}", key)
+		if strings.Contains(pattern, negatedPlaceholder) {
+			// Replace negated variable with a regex that excludes the value
+			pattern = strings.ReplaceAll(pattern, negatedPlaceholder,
+				fmt.Sprintf("(?!%s)[^/]+", regexp.QuoteMeta(value)))
+		} else {
+			// Replace normal variables
+			placeholder := fmt.Sprintf("{%s}", key)
+			pattern = strings.ReplaceAll(pattern, placeholder, value)
+		}
 	}
 	return pattern
 }
