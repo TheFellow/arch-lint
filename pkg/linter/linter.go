@@ -13,7 +13,7 @@ import (
 	"github.com/bmatcuk/doublestar/v4"
 )
 
-var debug = true
+var debug = false
 
 func log(str string, args ...any) {
 	if debug {

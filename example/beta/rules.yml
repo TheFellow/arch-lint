@@ -1,0 +1,8 @@
+rules:
+  - name: app package from api only
+    include:
+      - "example/beta/bookstore/{*.go,**/*.go}"
+    forbid:
+      - "example/beta/bookstore/app/**"
+    except:
+      - "example/beta/bookstore/api/**"
