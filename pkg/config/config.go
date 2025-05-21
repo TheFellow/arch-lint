@@ -12,11 +12,11 @@ type Config struct {
 }
 
 type Rule struct {
-	Type       string   `yaml:"type"`
-	Name       string   `yaml:"name"`
-	Packages   []string `yaml:"packages"`   // go list patterns to target specific packages
-	Forbidden  []string `yaml:"forbidden"`  // forbidden import package globs
-	Exceptions []string `yaml:"exceptions"` // exceptions to forbidden imports
+	Name    string   `yaml:"name"`
+	Include []string `yaml:"include"` // go list patterns to target specific packages
+	Exclude []string `yaml:"exclude"` // go list patterns to exclude specific packages
+	Forbid  []string `yaml:"forbid"`  // forbidden import package globs
+	Except  []string `yaml:"except"`  // exceptions to forbidden imports
 }
 
 func Load(path string) (*Config, error) {
@@ -29,7 +29,7 @@ func Load(path string) (*Config, error) {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 	for _, r := range cfg.Rules {
-		if len(r.Packages) == 0 {
+		if len(r.Include) == 0 {
 			return nil, fmt.Errorf("rule '%s' must specify 'packages'", r.Name)
 		}
 	}

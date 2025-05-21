@@ -1,6 +1,7 @@
 package linter
 
 import (
+	"bufio"
 	"fmt"
 	"go/parser"
 	"go/token"
@@ -20,22 +21,44 @@ func log(str string, args ...any) {
 	}
 }
 
+// getModuleName extracts the module name from go.mod
+func getModuleName() (string, error) {
+	file, err := os.Open("go.mod")
+	if err != nil {
+		return "", fmt.Errorf("failed to open go.mod: %w", err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if strings.HasPrefix(line, "module ") {
+			return strings.TrimSpace(strings.TrimPrefix(line, "module ")), nil
+		}
+	}
+	return "", fmt.Errorf("module name not found in go.mod")
+}
+
 // Run enforces forbidden import rules by analyzing files specified by glob patterns
 func Run(cfg *config.Config) ([]Violation, error) {
 	var violations []Violation
 
+	// Get the module name from go.mod
+	moduleName, err := getModuleName()
+	if err != nil {
+		return nil, err
+	}
+
 	for _, rule := range cfg.Rules {
 		log("Checking rule: %s\n", rule.Name)
 
-		for _, pkgPattern := range rule.Packages {
-			log("--Checking package pattern: %s\n", pkgPattern)
+		files, err := getFilesToCheck(rule)
+		if err != nil {
+			return nil, err
+		}
 
-			// Resolve file paths using the glob pattern
-			files, err := doublestar.Glob(os.DirFS("."), pkgPattern)
-			if err != nil {
-				return nil, fmt.Errorf("failed to resolve glob pattern %s: %w", pkgPattern, err)
-			}
-			//fmt.Println(os.Getwd())
+		for _, pkgPattern := range rule.Include {
+			log("--Checking include: %s\n", pkgPattern)
 			log("  --Found %d files\n", len(files))
 
 			for _, file := range files {
@@ -54,11 +77,12 @@ func Run(cfg *config.Config) ([]Violation, error) {
 
 				for _, imp := range node.Imports {
 					importPath := strings.Trim(imp.Path.Value, `"`)
+					importPath = strings.TrimPrefix(importPath, moduleName+"/")
 					log("    --Found import: %s\n", importPath)
 
 					// Check imports for forbidden rules
 					forbidden := false
-					for _, pat := range rule.Forbidden {
+					for _, pat := range rule.Forbid {
 						if ok, _ := doublestar.Match(pat, importPath); ok {
 							log("    --Forbidden by: %s\n", pat)
 							forbidden = true
@@ -71,9 +95,9 @@ func Run(cfg *config.Config) ([]Violation, error) {
 
 					// Check if the source package is in exceptions
 					exception := false
-					for _, pat := range rule.Exceptions {
+					for _, pat := range rule.Except {
 						if ok, _ := doublestar.Match(pat, packagePath); ok {
-							log("    --Exempted by: %s\n", pat)
+							log("    --Exempted by : %s\n", pat)
 							exception = true
 							break
 						}
@@ -94,4 +118,42 @@ func Run(cfg *config.Config) ([]Violation, error) {
 	}
 
 	return violations, nil
+}
+
+func getFilesToCheck(rule config.Rule) ([]string, error) {
+	// Resolve include globs
+	var includedFiles []string
+	for _, includePattern := range rule.Include {
+		files, err := doublestar.Glob(os.DirFS("."), includePattern)
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve include glob pattern %s: %w", includePattern, err)
+		}
+		includedFiles = append(includedFiles, files...)
+	}
+
+	// Resolve exclude globs
+	var excludedFiles []string
+	for _, excludePattern := range rule.Exclude {
+		files, err := doublestar.Glob(os.DirFS("."), excludePattern)
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve exclude glob pattern %s: %w", excludePattern, err)
+		}
+		excludedFiles = append(excludedFiles, files...)
+	}
+
+	// Filter out excluded files
+	excludedSet := make(map[string]struct{})
+	for _, file := range excludedFiles {
+		excludedSet[file] = struct{}{}
+	}
+
+	var filesToCheck []string
+	for _, file := range includedFiles {
+		if _, excluded := excludedSet[file]; !excluded {
+			filesToCheck = append(filesToCheck, file)
+		} else {
+			log("Excluding file: %s\n", file)
+		}
+	}
+	return filesToCheck, nil
 }
