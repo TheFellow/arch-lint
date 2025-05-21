@@ -13,7 +13,7 @@ import (
 	"github.com/bmatcuk/doublestar/v4"
 )
 
-var debug = false
+var debug = true
 
 func log(str string, args ...any) {
 	if debug {
@@ -49,10 +49,10 @@ func Run(cfg *config.Config) ([]Violation, error) {
 		return nil, err
 	}
 
-	for _, rule := range cfg.Rules {
-		log("rule: %s\n", rule.Name)
+	for _, spec := range cfg.Specs {
+		log("spec: %s\n", spec.Name)
 
-		files, err := getFilesToCheck(rule)
+		files, err := getFilesToCheck(spec)
 		if err != nil {
 			return nil, err
 		}
@@ -79,9 +79,9 @@ func Run(cfg *config.Config) ([]Violation, error) {
 
 				// Check imports for forbidden rules
 				forbidden := false
-				for _, pat := range rule.Forbid {
+				for _, pat := range spec.Rules.Forbid {
+					log("      check: %q\n", pat)
 					if ok, _ := doublestar.Match(pat, importPath); ok {
-						log("      forbid: %q\n", pat)
 						forbidden = true
 						break
 					}
@@ -92,7 +92,7 @@ func Run(cfg *config.Config) ([]Violation, error) {
 
 				// Check if the source package is in exceptions
 				exception := false
-				for _, pat := range rule.Except {
+				for _, pat := range spec.Rules.Except {
 					if ok, _ := doublestar.Match(pat, packagePath); ok {
 						log("      exempt: %q\n", pat)
 						exception = true
@@ -107,7 +107,7 @@ func Run(cfg *config.Config) ([]Violation, error) {
 				violations = append(violations, Violation{
 					File:   file,
 					Import: importPath,
-					Rule:   rule.Name,
+					Rule:   spec.Name,
 				})
 			}
 		}
@@ -117,10 +117,10 @@ func Run(cfg *config.Config) ([]Violation, error) {
 	return violations, nil
 }
 
-func getFilesToCheck(rule config.Rule) ([]string, error) {
+func getFilesToCheck(rule config.Spec) ([]string, error) {
 	// Resolve include globs
 	var includedFiles []string
-	for _, includePattern := range rule.Include {
+	for _, includePattern := range rule.Files.Include {
 		files, err := doublestar.Glob(os.DirFS("."), includePattern)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve include glob pattern %s: %w", includePattern, err)
@@ -130,7 +130,7 @@ func getFilesToCheck(rule config.Rule) ([]string, error) {
 
 	// Resolve exclude globs
 	var excludedFiles []string
-	for _, excludePattern := range rule.Exclude {
+	for _, excludePattern := range rule.Files.Exclude {
 		files, err := doublestar.Glob(os.DirFS("."), excludePattern)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve exclude glob pattern %s: %w", excludePattern, err)

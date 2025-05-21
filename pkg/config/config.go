@@ -8,15 +8,23 @@ import (
 )
 
 type Config struct {
-	Rules []Rule `yaml:"rules"`
+	Specs []Spec `yaml:"specs"`
 }
 
-type Rule struct {
-	Name    string   `yaml:"name"`
-	Include []string `yaml:"include"` // go list patterns to target specific packages
-	Exclude []string `yaml:"exclude"` // go list patterns to exclude specific packages
-	Forbid  []string `yaml:"forbid"`  // forbidden import package globs
-	Except  []string `yaml:"except"`  // exceptions to forbidden imports
+type Spec struct {
+	Name  string `yaml:"name"`
+	Files Files  `yaml:"files"`
+	Rules Rules  `yaml:"rules"`
+}
+
+type Rules struct {
+	Forbid []string `yaml:"forbid"`
+	Except []string `yaml:"except"`
+}
+
+type Files struct {
+	Include []string `yaml:"include"`
+	Exclude []string `yaml:"exclude"`
 }
 
 func Load(path string) (*Config, error) {
@@ -28,8 +36,8 @@ func Load(path string) (*Config, error) {
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
-	for _, r := range cfg.Rules {
-		if len(r.Include) == 0 {
+	for _, r := range cfg.Specs {
+		if len(r.Files.Include) == 0 {
 			return nil, fmt.Errorf("rule '%s' must specify 'packages'", r.Name)
 		}
 	}
