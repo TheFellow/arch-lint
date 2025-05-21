@@ -14,8 +14,8 @@ import (
 
 func main() {
 	app := &cli.Command{
-		Name:  "arch-lint",
-		Usage: "Enforce forbidden import rules via globs",
+		Name:  "go-arch-lint",
+		Usage: "Enforce Go project architecture rules",
 		Flags: []cli.Flag{
 			&cli.StringFlag{Name: "config", Aliases: []string{"c"}, Value: "config.yaml", Usage: "Path to config file"},
 		},
@@ -35,7 +35,7 @@ func main() {
 				}
 				os.Exit(1)
 			}
-			fmt.Println("✔ arch-lint: no forbidden imports found.")
+			fmt.Println("✔ go-arch-lint: no forbidden imports found.")
 			return nil
 		},
 	}
