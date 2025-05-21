@@ -13,7 +13,7 @@ import (
 	"github.com/bmatcuk/doublestar/v4"
 )
 
-var debug = false
+var debug = true
 
 func log(str string, args ...any) {
 	if debug {
@@ -50,71 +50,68 @@ func Run(cfg *config.Config) ([]Violation, error) {
 	}
 
 	for _, rule := range cfg.Rules {
-		log("Checking rule: %s\n", rule.Name)
+		log("rule: %s\n", rule.Name)
 
 		files, err := getFilesToCheck(rule)
 		if err != nil {
 			return nil, err
 		}
+		log("  %d files\n", len(files))
 
-		for _, pkgPattern := range rule.Include {
-			log("--Checking include: %s\n", pkgPattern)
-			log("  --Found %d files\n", len(files))
+		for _, file := range files {
+			log("  file: %q\n", file)
 
-			for _, file := range files {
-				log("  --Checking file: %s\n", file)
+			// Parse the file to extract imports and package name
+			fset := token.NewFileSet()
+			node, err := parser.ParseFile(fset, file, nil, parser.ImportsOnly)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse file %s: %w", file, err)
+			}
 
-				// Parse the file to extract imports and package name
-				fset := token.NewFileSet()
-				node, err := parser.ParseFile(fset, file, nil, parser.ImportsOnly)
-				if err != nil {
-					return nil, fmt.Errorf("failed to parse file %s: %w", file, err)
+			// Construct the package path from the file path
+			packagePath := strings.TrimPrefix(filepath.Dir(file), "./")
+			packagePath = strings.ReplaceAll(packagePath, string(os.PathSeparator), "/")
+
+			for _, imp := range node.Imports {
+				importPath := strings.Trim(imp.Path.Value, `"`)
+				importPath = strings.TrimPrefix(importPath, moduleName+"/")
+				log("    import: %q\n", importPath)
+
+				// Check imports for forbidden rules
+				forbidden := false
+				for _, pat := range rule.Forbid {
+					if ok, _ := doublestar.Match(pat, importPath); ok {
+						log("      forbid: %q\n", pat)
+						forbidden = true
+						break
+					}
+				}
+				if !forbidden {
+					continue
 				}
 
-				// Construct the package path from the file path
-				packagePath := strings.TrimPrefix(filepath.Dir(file), "./")
-				packagePath = strings.ReplaceAll(packagePath, string(os.PathSeparator), "/")
-
-				for _, imp := range node.Imports {
-					importPath := strings.Trim(imp.Path.Value, `"`)
-					importPath = strings.TrimPrefix(importPath, moduleName+"/")
-					log("    --Found import: %s\n", importPath)
-
-					// Check imports for forbidden rules
-					forbidden := false
-					for _, pat := range rule.Forbid {
-						if ok, _ := doublestar.Match(pat, importPath); ok {
-							log("    --Forbidden by: %s\n", pat)
-							forbidden = true
-							break
-						}
+				// Check if the source package is in exceptions
+				exception := false
+				for _, pat := range rule.Except {
+					if ok, _ := doublestar.Match(pat, packagePath); ok {
+						log("      exempt: %q\n", pat)
+						exception = true
+						break
 					}
-					if !forbidden {
-						continue
-					}
-
-					// Check if the source package is in exceptions
-					exception := false
-					for _, pat := range rule.Except {
-						if ok, _ := doublestar.Match(pat, packagePath); ok {
-							log("    --Exempted by : %s\n", pat)
-							exception = true
-							break
-						}
-					}
-					if exception {
-						continue
-					}
-
-					// If the import is forbidden and not in exceptions, add a violation
-					violations = append(violations, Violation{
-						File:   file,
-						Import: importPath,
-						Rule:   rule.Name,
-					})
 				}
+				if exception {
+					continue
+				}
+
+				// If the import is forbidden and not in exceptions, add a violation
+				violations = append(violations, Violation{
+					File:   file,
+					Import: importPath,
+					Rule:   rule.Name,
+				})
 			}
 		}
+
 	}
 
 	return violations, nil
@@ -152,7 +149,7 @@ func getFilesToCheck(rule config.Rule) ([]string, error) {
 		if _, excluded := excludedSet[file]; !excluded {
 			filesToCheck = append(filesToCheck, file)
 		} else {
-			log("Excluding file: %s\n", file)
+			log("skip file: %s\n", file)
 		}
 	}
 	return filesToCheck, nil
