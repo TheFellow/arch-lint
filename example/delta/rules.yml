@@ -6,6 +6,7 @@ specs:
       exclude:
     rules:
       forbid:
-        - "example/delta/bookstore/app/**"
+        - "example/delta/bookstore/app/{feature}/**"
       except:
         - "example/delta/bookstore/api/**"
+        - "example/delta/bookstore/app/{feature}/**"
