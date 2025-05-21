@@ -41,8 +41,6 @@ func matchPattern(pattern, path string) (map[string]string, bool) {
 	}
 	regexPattern = "^" + regexPattern + "$"
 
-	log("%s ==> %s", pattern, regexPattern)
-
 	re, err := regexp.Compile(regexPattern)
 	if err != nil {
 		return nil, false
