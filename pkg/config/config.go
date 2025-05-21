@@ -36,6 +36,9 @@ func Load(path string) (*Config, error) {
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
+	if len(cfg.Specs) == 0 {
+		return nil, fmt.Errorf("config must contain at least one spec")
+	}
 	for _, r := range cfg.Specs {
 		if len(r.Files.Include) == 0 {
 			return nil, fmt.Errorf("rule '%s' must specify 'packages'", r.Name)

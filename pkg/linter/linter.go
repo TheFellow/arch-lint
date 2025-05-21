@@ -41,6 +41,7 @@ func getModuleName() (string, error) {
 
 // Run enforces forbidden import rules by analyzing files specified by glob patterns
 func Run(cfg *config.Config) ([]Violation, error) {
+
 	var violations []Violation
 
 	// Get the module name from go.mod
