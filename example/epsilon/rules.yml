@@ -1,5 +1,5 @@
 specs:
-  - name: app package from api only
+  - name: app package from api or other features only
     files:
       include:
         - "example/epsilon/bookstore/{*.go,**/*.go}"
