@@ -1,6 +1,7 @@
 # Go Arch Lint
 
-`Go Arch Lint` is a static analysis tool for Go projects that enforces architectural rules by analyzing import paths and package structures. It helps maintain clean and consistent codebases by preventing unwanted dependencies and enforcing modular boundaries.
+`go-arch-lint` is a static analysis tool for Go projects that enforces architectural rules by analyzing import paths and package structures.
+It helps maintain clean and consistent codebases by preventing unwanted dependencies and enforcing modular boundaries.
 
 ## Features
 
@@ -27,25 +28,38 @@ The linter uses a `rules.yml` file to define the rules for your project.
 Below is an example configuration:
 
 ```yaml
-rules:
+specs:
   - name: no-experimental-imports
-    include:
-      - "example/alpha/{*.go,**/*.go}"
-    exclude:
-      - "example/alpha/internal/exception/*.go"
-    forbid:
-      - "example/alpha/experimental"
-    except:
-      - "example/alpha/internal/excluded"
+    files:
+      include:
+        - "example/alpha/{*.go,**/*.go}"
+      exclude:
+        - "example/alpha/internal/exception/*.go"
+    rules:
+      forbid:
+        - "example/alpha/experimental"
+      except:
+        - "example/alpha/internal/excluded"
 ```
 
-#### Fields
+### Fields
 
 - **name**: A descriptive name for the rule.
 - **include**: Glob patterns specifying files to include in the analysis.
 - **exclude**: Glob patterns specifying files to exclude from the analysis.
 - **forbid**: Import paths that are forbidden.
 - **except**: Import paths that are exceptions to the forbidden rules.
+
+A `forbid` pattern supports a few special cases:
+- `{variable}`: Matches a single path segment and captures it as a named variable.
+- `*`: Matches a single path segment.
+- `**`: Matches multiple path segments, including none.
+
+An `except` patterns supports the same special cases as `forbid`, and one more
+- `{variable}`: Matches a single path segment and captures it as a named variable.
+- `{!variable}`: Does not match a path segment if it has the value captured in the `forbid` pattern.
+- `*`: Matches a single path segment.
+- `**`: Matches multiple path segments, including none.
 
 ## Example
 
