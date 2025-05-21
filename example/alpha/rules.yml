@@ -1,0 +1,10 @@
+rules:
+  - name: no-experimental-imports
+    include:
+      - "example/alpha/{*.go,**/*.go}"
+    exclude:
+      - "example/alpha/internal/exception/*.go"
+    forbid:
+      - "example/alpha/experimental"
+    except:
+      - "example/alpha/internal/excluded"
