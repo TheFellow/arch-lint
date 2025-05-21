@@ -17,9 +17,16 @@ func TestMatchPattern(t *testing.T) {
 	}{
 		{
 			name:      "simple match with variable",
-			pattern:   "example/beta/bookstore/app/{feature}/**",
+			pattern:   "example/beta/bookstore/app/{feature}/some/path",
 			path:      "example/beta/bookstore/app/feature1/some/path",
 			wantVars:  map[string]string{"feature": "feature1"},
+			wantMatch: true,
+		},
+		{
+			name:      "match with multiple variables",
+			pattern:   "example/{section}/bookstore/{feature}/some/path",
+			path:      "example/beta/bookstore/feature1/some/path",
+			wantVars:  map[string]string{"section": "beta", "feature": "feature1"},
 			wantMatch: true,
 		},
 		{
@@ -28,13 +35,6 @@ func TestMatchPattern(t *testing.T) {
 			path:      "example/beta/bookstore/api/feature1/some/path",
 			wantVars:  nil,
 			wantMatch: false,
-		},
-		{
-			name:      "match with multiple variables",
-			pattern:   "example/{section}/bookstore/{feature}/**",
-			path:      "example/beta/bookstore/feature1/some/path",
-			wantVars:  map[string]string{"section": "beta", "feature": "feature1"},
-			wantMatch: true,
 		},
 		{
 			name:      "match with single-level wildcard",
@@ -51,9 +51,30 @@ func TestMatchPattern(t *testing.T) {
 			wantMatch: false,
 		},
 		{
-			name:      "match with multi-level wildcard",
+			name:      "match with trailing multi-level wildcard",
 			pattern:   "example/beta/bookstore/**",
 			path:      "example/beta/bookstore/feature1/some/path",
+			wantVars:  nil,
+			wantMatch: true,
+		},
+		{
+			name:      "match with multi-level wildcard in the middle",
+			pattern:   "example/beta/bookstore/**/api",
+			path:      "example/beta/bookstore/feature1/some/path/api",
+			wantVars:  nil,
+			wantMatch: true,
+		},
+		{
+			name:      "no match with multi-level wildcard in the middle",
+			pattern:   "example/beta/bookstore/**/api",
+			path:      "example/beta/bookstore/feature1/some/path/util",
+			wantVars:  nil,
+			wantMatch: false,
+		},
+		{
+			name:      "match with multi-level wildcard at the end does not need to match anything",
+			pattern:   "example/beta/bookstore/**",
+			path:      "example/beta/bookstore",
 			wantVars:  nil,
 			wantMatch: true,
 		},

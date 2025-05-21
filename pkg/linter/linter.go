@@ -83,6 +83,7 @@ func Run(cfg *config.Config) ([]Violation, error) {
 				for _, pat := range spec.Rules {
 					log("      check: %q\n", pat.Forbid)
 					if vars, ok := matchPattern(pat.Forbid, importPath); ok {
+						log("      forbid: %q\n", pat.Forbid)
 						capturedVars = vars
 						forbidden = true
 						break
@@ -95,7 +96,12 @@ func Run(cfg *config.Config) ([]Violation, error) {
 				// Check if the source package is in exceptions
 				exception := false
 				for _, pat := range spec.Rules {
+					if pat.Except == "" {
+						continue
+					}
 					exceptPattern := replaceVariables(pat.Except, capturedVars)
+					log("      check: %q\n", exceptPattern)
+					log("      package: %q\n", packagePath)
 					if _, ok := matchPattern(exceptPattern, packagePath); ok {
 						log("      exempt: %q\n", pat.Except)
 						exception = true

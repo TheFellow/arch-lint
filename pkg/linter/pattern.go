@@ -7,12 +7,41 @@ import (
 )
 
 func matchPattern(pattern, path string) (map[string]string, bool) {
-	// Convert gorilla-mux style pattern to regex
-	regexPattern := "^" + regexp.QuoteMeta(pattern) + "$"
-	regexPattern = strings.ReplaceAll(regexPattern, `\{`, `(?P<`)
-	regexPattern = strings.ReplaceAll(regexPattern, `\}`, `>[^/]+)`)
-	regexPattern = strings.ReplaceAll(regexPattern, `\*\*`, `.*`)
-	regexPattern = strings.ReplaceAll(regexPattern, `\*`, `[^/]*`)
+	// Split the pattern into segments
+	segments := strings.Split(pattern, "/")
+	for i, segment := range segments {
+		// Handle variables
+		if strings.HasPrefix(segment, "{") && strings.HasSuffix(segment, "}") {
+			// Convert {var} to (?P<var>[^/]+)
+			segment = fmt.Sprintf("(?P<%s>[^/]+)", segment[1:len(segment)-1])
+		}
+
+		// Handle single-level wildcards
+		if segment == "*" {
+			// Convert * to [^/]+
+			segment = "[^/]+"
+		}
+
+		// Handle multi-level wildcards
+		if segment == "**" {
+			// Convert ** to .*
+			segment = ".*"
+		}
+
+		// Update the segment
+		segments[i] = segment
+	}
+
+	// Join the segments back together
+	regexPattern := strings.Join(segments, "/")
+	// Special case for /** at the end of the pattern
+	if strings.HasSuffix(regexPattern, "/.*") {
+		// If the pattern ends with a wildcard, allow empty string at the end
+		regexPattern = strings.TrimSuffix(regexPattern, "/.*") + "/?.*"
+	}
+	regexPattern = "^" + regexPattern + "$"
+
+	log("%s ==> %s", pattern, regexPattern)
 
 	re, err := regexp.Compile(regexPattern)
 	if err != nil {
