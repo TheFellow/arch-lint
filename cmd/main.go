@@ -22,7 +22,8 @@ func main() {
 		Action: func(ctx context.Context, c *cli.Command) error {
 			cfg, err := config.Load(c.String("config"))
 			if err != nil {
-				return err
+				fmt.Println(err)
+				os.Exit(1)
 			}
 
 			violations, err := linter.Run(cfg)

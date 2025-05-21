@@ -1,0 +1,11 @@
+specs:
+  - name: app package from api only
+    files:
+      include:
+        - "example/beta/bookstore/{*.go,**/*.go}"
+      exclude:
+    rules:
+      forbid:
+        - "example/beta/bookstore/app/**"
+      except:
+        - "example/beta/bookstore/api/**"
