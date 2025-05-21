@@ -52,7 +52,7 @@ func Run(cfg *config.Config) ([]Violation, error) {
 	for _, spec := range cfg.Specs {
 		log("spec: %s\n", spec.Name)
 
-		files, err := getFilesToCheck(spec)
+		files, err := getFilesToCheck(spec.Files)
 		if err != nil {
 			return nil, err
 		}
@@ -78,10 +78,12 @@ func Run(cfg *config.Config) ([]Violation, error) {
 				log("    import: %q\n", importPath)
 
 				// Check imports for forbidden rules
+				var capturedVars map[string]string
 				forbidden := false
-				for _, pat := range spec.Rules.Forbid {
-					log("      check: %q\n", pat)
-					if ok, _ := doublestar.Match(pat, importPath); ok {
+				for _, pat := range spec.Rules {
+					log("      check: %q\n", pat.Forbid)
+					if vars, ok := matchPattern(pat.Forbid, importPath); ok {
+						capturedVars = vars
 						forbidden = true
 						break
 					}
@@ -92,9 +94,10 @@ func Run(cfg *config.Config) ([]Violation, error) {
 
 				// Check if the source package is in exceptions
 				exception := false
-				for _, pat := range spec.Rules.Except {
-					if ok, _ := doublestar.Match(pat, packagePath); ok {
-						log("      exempt: %q\n", pat)
+				for _, pat := range spec.Rules {
+					exceptPattern := replaceVariables(pat.Except, capturedVars)
+					if _, ok := matchPattern(exceptPattern, packagePath); ok {
+						log("      exempt: %q\n", pat.Except)
 						exception = true
 						break
 					}
@@ -117,10 +120,10 @@ func Run(cfg *config.Config) ([]Violation, error) {
 	return violations, nil
 }
 
-func getFilesToCheck(rule config.Spec) ([]string, error) {
+func getFilesToCheck(files config.Files) ([]string, error) {
 	// Resolve include globs
 	var includedFiles []string
-	for _, includePattern := range rule.Files.Include {
+	for _, includePattern := range files.Include {
 		files, err := doublestar.Glob(os.DirFS("."), includePattern)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve include glob pattern %s: %w", includePattern, err)
@@ -130,7 +133,7 @@ func getFilesToCheck(rule config.Spec) ([]string, error) {
 
 	// Resolve exclude globs
 	var excludedFiles []string
-	for _, excludePattern := range rule.Files.Exclude {
+	for _, excludePattern := range files.Exclude {
 		files, err := doublestar.Glob(os.DirFS("."), excludePattern)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve exclude glob pattern %s: %w", excludePattern, err)

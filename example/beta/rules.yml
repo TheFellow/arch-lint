@@ -4,9 +4,6 @@ specs:
       include:
         - "example/beta/bookstore/{*.go,**/*.go}"
       exclude:
-
     rules:
-      forbid:
-        - "example/beta/bookstore/app/**"
-      except:
-        - "example/beta/bookstore/api/**"
+      - forbid: "example/beta/bookstore/app/{feature}/**"
+        except: "example/beta/bookstore/api/{feature}/**"

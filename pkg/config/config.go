@@ -14,12 +14,12 @@ type Config struct {
 type Spec struct {
 	Name  string `yaml:"name"`
 	Files Files  `yaml:"files"`
-	Rules Rules  `yaml:"rules"`
+	Rules []Rule `yaml:"rules"`
 }
 
-type Rules struct {
-	Forbid []string `yaml:"forbid"`
-	Except []string `yaml:"except"`
+type Rule struct {
+	Forbid string `yaml:"forbid"`
+	Except string `yaml:"except"`
 }
 
 type Files struct {
