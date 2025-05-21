@@ -1,4 +1,4 @@
-package books
+package authors
 
 import "github.com/TheFellow/go-arch-lint/example/epsilon/bookstore/app/authors"
 
