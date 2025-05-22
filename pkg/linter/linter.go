@@ -15,12 +15,10 @@ import (
 	"github.com/bmatcuk/doublestar/v4"
 )
 
-var debug = false
+var Processed strings.Builder
 
-func log(str string, args ...any) {
-	if debug {
-		fmt.Printf(str, args...)
-	}
+func processed(str string, args ...any) {
+	Processed.WriteString(fmt.Sprintf(str, args...))
 }
 
 // getModuleName extracts the module name from go.mod
@@ -75,16 +73,16 @@ func Run(cfg *config.Config) ([]Violation, error) {
 	}
 
 	for _, spec := range cfg.Specs {
-		log("spec: %s\n", spec.Name)
+		processed("spec: %s\n", spec.Name)
 
 		files, err := getFilesToCheck(spec.Files)
 		if err != nil {
 			return nil, err
 		}
-		log("  %d files\n", len(files))
+		processed("  %d files\n", len(files))
 
 		for _, file := range files {
-			log("  file: %q\n", file)
+			processed("  file: %q\n", file)
 
 			// Parse the file to extract imports and package name
 			fset := token.NewFileSet()
@@ -98,21 +96,21 @@ func Run(cfg *config.Config) ([]Violation, error) {
 			if !ok {
 				return nil, fmt.Errorf("package path not found for file %s", file)
 			}
-			log("    full package path: %q\n", fullPackagePath)
+			processed("    full package path: %q\n", fullPackagePath)
 
 			for _, imp := range node.Imports {
 				// Extract the true import path
 				importPath := strings.Trim(imp.Path.Value, `"`)
 				importPath = strings.TrimPrefix(importPath, moduleName+"/")
-				log("    import: %q\n", importPath)
+				processed("    import: %q\n", importPath)
 
 				// Check imports for forbidden rules
 				var capturedVars map[string]string
 				forbidden := false
 				for _, pat := range spec.Rules.Forbid {
-					log("      check: %q\n", pat)
+					processed("      check: %q\n", pat)
 					if vars, ok := matchPattern(pat, importPath); ok {
-						log("      forbid: %q\n", pat)
+						processed("      forbid: %q\n", pat)
 						capturedVars = vars
 						forbidden = true
 						break
@@ -131,7 +129,7 @@ func Run(cfg *config.Config) ([]Violation, error) {
 						return nil, fmt.Errorf("failed to compile regex %q: %w", exceptPattern, err)
 					}
 					if ok := re.MatchString(fullPackagePath); ok {
-						log("      exempt: %q\n", pat)
+						processed("      exempt: %q\n", pat)
 						exception = true
 						break
 					}
@@ -186,7 +184,7 @@ func getFilesToCheck(files config.Files) ([]string, error) {
 		if _, excluded := excludedSet[file]; !excluded {
 			filesToCheck = append(filesToCheck, file)
 		} else {
-			log("skip file: %s\n", file)
+			processed("skip file: %s\n", file)
 		}
 	}
 	return filesToCheck, nil
