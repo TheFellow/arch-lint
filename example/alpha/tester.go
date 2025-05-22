@@ -1,10 +1,11 @@
 package alpha
 
 import (
+	"github.com/TheFellow/go-arch-lint/example/alpha/experimental"
 	"github.com/TheFellow/go-arch-lint/example/alpha/internal/exception"
 )
 
 func DoTest() {
 	exception.Test()
-	//_ = experimental.NewWidget()
+	_ = experimental.NewWidget()
 }
