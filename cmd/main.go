@@ -18,6 +18,7 @@ func main() {
 		Usage: "Enforce Go project architecture rules",
 		Flags: []cli.Flag{
 			&cli.StringFlag{Name: "config", Aliases: []string{"c"}, Value: "config.yaml", Usage: "Path to config file"},
+			&cli.BoolFlag{Name: "verbose", Aliases: []string{"v"}, Usage: "Enable verbose output"},
 		},
 		Action: func(ctx context.Context, c *cli.Command) error {
 			cfg, err := config.Load(c.String("config"))
@@ -30,6 +31,11 @@ func main() {
 			if err != nil {
 				return err
 			}
+
+			if c.Bool("verbose") {
+				fmt.Println(linter.Processed.String())
+			}
+
 			if len(violations) > 0 {
 				for _, v := range violations {
 					fmt.Println(v)

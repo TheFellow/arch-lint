@@ -68,7 +68,6 @@ func escapePattern(pattern string) string {
 }
 
 func replaceVariables(pattern string, vars map[string]string) string {
-	negated := false
 	segments := strings.Split(pattern, "/")
 	for i, segment := range segments {
 		for key, value := range vars {
@@ -83,7 +82,6 @@ func replaceVariables(pattern string, vars map[string]string) string {
 					sb.WriteRune(']')
 				}
 				segment = sb.String()
-				negated = true
 			}
 			if segment == fmt.Sprintf("{%s}", key) {
 				// Replace normal variables
@@ -95,9 +93,6 @@ func replaceVariables(pattern string, vars map[string]string) string {
 		segments[i] = segment
 	}
 
-	if negated {
-		log("        negated: %s ==> %s\n", pattern, strings.Join(segments, "/"))
-	}
 	// Recombine the segments into the final pattern
 	return strings.Join(segments, "/")
 }
