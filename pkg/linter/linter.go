@@ -6,9 +6,10 @@ import (
 	"go/parser"
 	"go/token"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
+
+	"golang.org/x/tools/go/packages"
 
 	"github.com/TheFellow/go-arch-lint/pkg/config"
 	"github.com/bmatcuk/doublestar/v4"
@@ -42,13 +43,35 @@ func getModuleName() (string, error) {
 
 // Run enforces forbidden import rules by analyzing files specified by glob patterns
 func Run(cfg *config.Config) ([]Violation, error) {
-
 	var violations []Violation
 
 	// Get the module name from go.mod
 	moduleName, err := getModuleName()
 	if err != nil {
 		return nil, err
+	}
+
+	// Load package information using the analysis package
+	cfgs := &packages.Config{
+		Mode: packages.NeedName | packages.NeedFiles | packages.NeedImports,
+	}
+	pkgs, err := packages.Load(cfgs, "./...")
+	if err != nil {
+		return nil, fmt.Errorf("failed to load packages: %w", err)
+	}
+
+	// Map file paths to their full package paths
+	fileToPackagePath := make(map[string]string)
+	wd, err := os.Getwd()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get working directory: %w", err)
+	}
+	for _, pkg := range pkgs {
+		for _, fileAbs := range pkg.GoFiles {
+			file := strings.TrimPrefix(fileAbs, wd+"/")
+			pkgPath := strings.TrimPrefix(pkg.PkgPath, moduleName+"/")
+			fileToPackagePath[file] = pkgPath
+		}
 	}
 
 	for _, spec := range cfg.Specs {
@@ -70,11 +93,15 @@ func Run(cfg *config.Config) ([]Violation, error) {
 				return nil, fmt.Errorf("failed to parse file %s: %w", file, err)
 			}
 
-			// Construct the package path from the file path
-			packagePath := strings.TrimPrefix(filepath.Dir(file), "./")
-			packagePath = strings.ReplaceAll(packagePath, string(os.PathSeparator), "/")
+			// Get the full package path from the map
+			fullPackagePath, ok := fileToPackagePath[file]
+			if !ok {
+				return nil, fmt.Errorf("package path not found for file %s", file)
+			}
+			log("    full package path: %q\n", fullPackagePath)
 
 			for _, imp := range node.Imports {
+				// Extract the true import path
 				importPath := strings.Trim(imp.Path.Value, `"`)
 				importPath = strings.TrimPrefix(importPath, moduleName+"/")
 				log("    import: %q\n", importPath)
@@ -103,7 +130,7 @@ func Run(cfg *config.Config) ([]Violation, error) {
 					if err != nil {
 						return nil, fmt.Errorf("failed to compile regex %q: %w", exceptPattern, err)
 					}
-					if ok := re.MatchString(packagePath); ok {
+					if ok := re.MatchString(fullPackagePath); ok {
 						log("      exempt: %q\n", pat)
 						exception = true
 						break
