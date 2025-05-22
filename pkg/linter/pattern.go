@@ -70,29 +70,59 @@ func escapePattern(pattern string) string {
 func replaceVariables(pattern string, vars map[string]string) string {
 	segments := strings.Split(pattern, "/")
 	for i, segment := range segments {
-		for key, value := range vars {
-			// Handle negated variables
+		for key := range vars {
+			// Handle negated variables by treating them as normal variables in the regex
 			negatedPlaceholder := fmt.Sprintf("{!%s}", key)
 			if segment == negatedPlaceholder {
-				var sb strings.Builder
-				for _, c := range value {
-					sb.WriteRune('[')
-					sb.WriteRune('^')
-					sb.WriteRune(c)
-					sb.WriteRune(']')
-				}
-				segment = sb.String()
-			}
-			if segment == fmt.Sprintf("{%s}", key) {
-				// Replace normal variables
-				placeholder := fmt.Sprintf("{%s}", key)
-				segment = strings.ReplaceAll(segment, placeholder, value)
+				segment = fmt.Sprintf("{%s}", key)
 			}
 		}
-		// Update the segment
 		segments[i] = segment
 	}
-
-	// Recombine the segments into the final pattern
 	return strings.Join(segments, "/")
+}
+
+func exceptRegex(pattern, path string, vars map[string]string) bool {
+	// Replace variables in the pattern
+	regexPattern := escapePattern(replaceVariables(pattern, vars))
+
+	// Compile the regex
+	re, err := regexp.Compile(regexPattern)
+	if err != nil {
+		return false
+	}
+
+	// Match the path against the regex
+	match := re.FindStringSubmatch(path)
+	if match == nil {
+		return false
+	}
+
+	// Extract named groups into a map
+	capturedVars := make(map[string]string)
+	for i, name := range re.SubexpNames() {
+		if i > 0 && name != "" {
+			capturedVars[name] = match[i]
+		}
+	}
+
+	// Validate variables (both positive and negated)
+	for key, value := range vars {
+		negatedPlaceholder := fmt.Sprintf("{!%s}", key)
+		positivePlaceholder := fmt.Sprintf("{%s}", key)
+
+		if strings.Contains(pattern, negatedPlaceholder) {
+			// For negated variables, ensure the captured value does not match the forbidden value
+			if capturedVars[key] == value {
+				return false // Negated variable matches the forbidden value
+			}
+		} else if strings.Contains(pattern, positivePlaceholder) {
+			// For positive variables, ensure the captured value matches the expected value
+			if capturedVars[key] != value {
+				return false // Positive variable does not match the expected value
+			}
+		}
+	}
+
+	return true
 }

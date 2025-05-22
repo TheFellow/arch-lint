@@ -6,7 +6,6 @@ import (
 	"go/parser"
 	"go/token"
 	"os"
-	"regexp"
 	"strings"
 
 	"golang.org/x/tools/go/packages"
@@ -123,12 +122,7 @@ func Run(cfg *config.Config) ([]Violation, error) {
 				// Check if the source package is in exceptions
 				exception := false
 				for _, pat := range spec.Rules.Except {
-					exceptPattern := replaceVariables(pat, capturedVars)
-					re, err := regexp.Compile(escapePattern(exceptPattern))
-					if err != nil {
-						return nil, fmt.Errorf("failed to compile regex %q: %w", exceptPattern, err)
-					}
-					if ok := re.MatchString(fullPackagePath); ok {
+					if exceptRegex(pat, fullPackagePath, capturedVars) {
 						processed("      exempt: %q\n", pat)
 						exception = true
 						break
