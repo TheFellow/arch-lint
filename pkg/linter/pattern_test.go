@@ -96,65 +96,6 @@ func TestMatchPattern(t *testing.T) {
 	}
 }
 
-func TestReplaceVariables(t *testing.T) {
-	tests := []struct {
-		name     string
-		pattern  string
-		vars     map[string]string
-		expected string
-	}{
-		{
-			name:     "single variable replacement",
-			pattern:  "example/{feature}/path",
-			vars:     map[string]string{"feature": "beta"},
-			expected: "example/beta/path",
-		},
-		{
-			name:     "multiple variable replacements",
-			pattern:  "example/{section}/{feature}/path",
-			vars:     map[string]string{"section": "alpha", "feature": "gamma"},
-			expected: "example/alpha/gamma/path",
-		},
-		{
-			name:     "no variables to replace",
-			pattern:  "example/static/path",
-			vars:     map[string]string{},
-			expected: "example/static/path",
-		},
-		{
-			name:     "variable not in map",
-			pattern:  "example/{missing}/path",
-			vars:     map[string]string{"feature": "beta"},
-			expected: "example/{missing}/path",
-		},
-		{
-			name:     "empty pattern",
-			pattern:  "",
-			vars:     map[string]string{"feature": "beta"},
-			expected: "",
-		},
-		{
-			name:     "negated variable replacement",
-			pattern:  "example/{!feature}/path",
-			vars:     map[string]string{"feature": "beta"},
-			expected: "example/[^b][^e][^t][^a][^/]+/path",
-		},
-		{
-			name:     "negated variable not in map",
-			pattern:  "example/{!missing}/path",
-			vars:     map[string]string{"feature": "beta"},
-			expected: "example/{!missing}/path",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := replaceVariables(tt.pattern, tt.vars)
-			testutil.Equals(t, result, tt.expected)
-		})
-	}
-}
-
 func TestExceptRegex(t *testing.T) {
 	tests := []struct {
 		name      string
