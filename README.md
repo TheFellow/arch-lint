@@ -12,7 +12,9 @@ It helps maintain clean and consistent codebases by preventing unwanted dependen
 
 ## Installation
 
-TODO
+```
+go install github.com/TheFellow/go-arch-lint@latest
+```
 
 ## Usage
 
@@ -51,38 +53,25 @@ specs:
 - **except**: Import paths that are exceptions to the forbidden rules.
 
 A `forbid` pattern supports a few special cases:
-- `{variable}`: Matches a single path segment and captures it as a named variable.
 - `*`: Matches a single path segment.
 - `**`: Matches multiple path segments, including none.
+- `{variable}`: Matches a single path segment and captures it as a named variable.
 
 An `except` patterns supports the same special cases as `forbid`, and one more
-- `{variable}`: Matches a single path segment and captures it as a named variable.
-- `{!variable}`: Does not match a path segment if it has the value captured in the `forbid` pattern.
 - `*`: Matches a single path segment.
 - `**`: Matches multiple path segments, including none.
+- `{variable}`: Matches this path segment when its value matches the one captured in the `forbid` pattern.
+- `{!variable}`: Matches this path segment when its value **does not** match the one captured in the `forbid` pattern.
 
-## Example
-
-Given the following project structure:
-
-```
-example/
-├── alpha/
-│   ├── experimental/
-│   │   └── widget.go
-│   ├── internal/
-│   │   ├── exception/
-│   │   │   └── test.go
-│   │   └── excluded/
-│   │       └── allowed.go
-│   └── main.go
-```
 
 The linter will:
 
-1. Analyze files matching the `include` patterns.
-2. Exclude files matching the `exclude` patterns.
-3. Report violations for imports matching the `forbid` patterns unless they match the `except` patterns.
+- For all files in scope, which is
+   - Files matching the `include` pattern(s)
+   - Files not matching the `exclude` pattern(s)
+- For each file matching a `forbid` pattern:
+   - Report a linting error, unless
+   - The import matches an `except` pattern
 
 ## Output
 
@@ -98,6 +87,8 @@ On the unhappy path the linter will output
 go-arch-lint: [<rule name>] "path/to/file.go" imports "forbidden/package"
 ```
 
+and exit with code 1.
+
 ## Development
 
 ### Prerequisites
@@ -106,7 +97,7 @@ go-arch-lint: [<rule name>] "path/to/file.go" imports "forbidden/package"
 
 ### Running Tests
 
-TODO
+TODO: Write some tests lol
 
 ## Contributing
 
