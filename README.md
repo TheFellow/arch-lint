@@ -1,6 +1,6 @@
-# Go Arch Lint
+# arch-lint
 
-`go-arch-lint` is a static analysis tool for Go projects that enforces architectural rules by analyzing import paths and package structures.
+`arch-lint` is a static analysis tool for Go projects that enforces architectural rules by analyzing import paths and package structures.
 It helps maintain clean and consistent codebases by preventing unwanted dependencies and enforcing modular boundaries.
 
 ## Features
@@ -13,7 +13,7 @@ It helps maintain clean and consistent codebases by preventing unwanted dependen
 ## Installation
 
 ```
-go install github.com/TheFellow/go-arch-lint@latest
+go install github.com/TheFellow/arch-lint@latest
 ```
 
 ## Usage
@@ -21,7 +21,7 @@ go install github.com/TheFellow/go-arch-lint@latest
 Run the linter with a configuration file:
 
 ```bash
-./go-arch-lint -config=path/to/rules.yml
+./arch-lint -config=path/to/rules.yml
 ```
 
 ### Configuration
@@ -77,14 +77,14 @@ The linter will:
 
 On the happy path the linter will output
 ```
-✔ go-arch-lint: no forbidden imports found.
+✔ arch-lint: no forbidden imports found.
 ```
 and exit with code 0.
 
 On the unhappy path the linter will output
 
 ```
-go-arch-lint: [<rule name>] "path/to/file.go" imports "forbidden/package"
+arch-lint: [<rule name>] "path/to/file.go" imports "forbidden/package"
 ```
 
 and exit with code 1.

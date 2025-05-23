@@ -10,7 +10,7 @@ import (
 
 	"golang.org/x/tools/go/packages"
 
-	"github.com/TheFellow/go-arch-lint/pkg/config"
+	"github.com/TheFellow/arch-lint/pkg/config"
 	"github.com/bmatcuk/doublestar/v4"
 )
 

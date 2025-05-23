@@ -17,5 +17,5 @@ type Violation struct {
 }
 
 func (v Violation) String() string {
-	return fmt.Sprintf("go-arch-lint: [%s] %q imports %q", v.Rule, v.File, v.Import)
+	return fmt.Sprintf("arch-lint: [%s] %q imports %q", v.Rule, v.File, v.Import)
 }

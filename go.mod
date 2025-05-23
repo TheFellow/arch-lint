@@ -1,4 +1,4 @@
-module github.com/TheFellow/go-arch-lint
+module github.com/TheFellow/arch-lint
 
 go 1.23.0
 

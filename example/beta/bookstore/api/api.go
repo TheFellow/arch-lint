@@ -1,8 +1,8 @@
 package api
 
 import (
-	"github.com/TheFellow/go-arch-lint/example/beta/bookstore/app/authors"
-	"github.com/TheFellow/go-arch-lint/example/beta/bookstore/app/books"
+	"github.com/TheFellow/arch-lint/example/beta/bookstore/app/authors"
+	"github.com/TheFellow/arch-lint/example/beta/bookstore/app/books"
 )
 
 type api struct {

@@ -3,7 +3,7 @@ package linter
 import (
 	"testing"
 
-	"github.com/TheFellow/go-arch-lint/pkg/testutil"
+	"github.com/TheFellow/arch-lint/pkg/testutil"
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
 

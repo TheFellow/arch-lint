@@ -3,7 +3,7 @@ package exception
 import (
 	"fmt"
 
-	"github.com/TheFellow/go-arch-lint/example/alpha/experimental"
+	"github.com/TheFellow/arch-lint/example/alpha/experimental"
 )
 
 func Test() {

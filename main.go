@@ -8,13 +8,13 @@ import (
 
 	"github.com/urfave/cli/v3"
 
-	"github.com/TheFellow/go-arch-lint/pkg/config"
-	"github.com/TheFellow/go-arch-lint/pkg/linter"
+	"github.com/TheFellow/arch-lint/pkg/config"
+	"github.com/TheFellow/arch-lint/pkg/linter"
 )
 
 func main() {
 	app := &cli.Command{
-		Name:  "go-arch-lint",
+		Name:  "arch-lint",
 		Usage: "Enforce Go project architecture rules",
 		Flags: []cli.Flag{
 			&cli.StringFlag{Name: "config", Aliases: []string{"c"}, Value: "config.yaml", Usage: "Path to config file"},
@@ -42,7 +42,7 @@ func main() {
 				}
 				os.Exit(1)
 			}
-			fmt.Println("✔ go-arch-lint: no forbidden imports found.")
+			fmt.Println("✔ arch-lint: no forbidden imports found.")
 			return nil
 		},
 	}
