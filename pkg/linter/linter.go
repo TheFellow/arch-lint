@@ -22,7 +22,6 @@ func report(str string, args ...any) {
 
 // Run enforces forbidden import rules by analyzing files specified by glob patterns
 func Run(cfg *config.Config) ([]Violation, error) {
-	var violations []Violation
 
 	moduleName, err := getModuleName()
 	if err != nil {
@@ -39,6 +38,7 @@ func Run(cfg *config.Config) ([]Violation, error) {
 		return nil, err
 	}
 
+	var violations []Violation
 	for _, spec := range cfg.Specs {
 		report("spec: %s\n", spec.Name)
 
@@ -66,7 +66,7 @@ func Run(cfg *config.Config) ([]Violation, error) {
 			report("   pkg: %q\n", packagePath)
 
 			for _, imp := range node.Imports {
-				// Extract the true import path
+				// Extract the relative import path
 				importPath := strings.Trim(imp.Path.Value, `"`)
 				importPath = strings.TrimPrefix(importPath, moduleName+"/")
 				report("    import: %q\n", importPath)
@@ -101,9 +101,9 @@ func Run(cfg *config.Config) ([]Violation, error) {
 
 				// If the import is forbidden and not in exceptions, add a violation
 				violations = append(violations, Violation{
+					Rule:   spec.Name,
 					File:   file,
 					Import: importPath,
-					Rule:   spec.Name,
 				})
 			}
 		}
