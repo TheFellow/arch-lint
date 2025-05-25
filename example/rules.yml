@@ -1,0 +1,36 @@
+specs:
+  - name: no-experimental-imports
+    files:
+      include:
+        - "example/alpha/{*.go,**/*.go}"
+      exclude:
+        - "example/alpha/internal/exception/*.go"
+    rules:
+      forbid:
+        - "example/alpha/experimental"
+      except:
+        - "example/alpha/internal/excluded"
+
+  - name: app package from api only
+    files:
+      include:
+        - "example/{beta,delta}/bookstore/{*.go,**/*.go}"
+      exclude:
+    rules:
+      forbid:
+        - "example/*/bookstore/app/{feature}/**"
+      except:
+        - "example/*/bookstore/api/**"
+        - "example/*/bookstore/app/{feature}/**"
+
+  - name: app package from api or other features only
+    files:
+      include:
+        - "example/epsilon/bookstore/{*.go,**/*.go}"
+      exclude:
+    rules:
+      forbid:
+        - "example/epsilon/bookstore/app/{feature}/**"
+      except:
+        - "example/epsilon/bookstore/api/**"
+        - "example/epsilon/bookstore/app/{!feature}/**"

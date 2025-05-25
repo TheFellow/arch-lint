@@ -30,12 +30,11 @@ func main() {
 			}
 
 			violations, err := linter.Run(cfg)
-			if err != nil {
-				return err
-			}
-
 			if c.Bool("verbose") {
 				fmt.Println(linter.Processed.String())
+			}
+			if err != nil {
+				return err
 			}
 
 			if len(violations) > 0 {

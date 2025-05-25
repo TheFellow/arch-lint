@@ -17,3 +17,10 @@ func Equals(t testing.TB, got, want any, opts ...cmp.Option) {
 		t.Fatalf("mismatch -want +got:\n%v", diff)
 	}
 }
+
+func ErrorIf(t testing.TB, fail bool, msg string, args ...any) {
+	t.Helper()
+	if fail {
+		t.Fatalf(msg, args...)
+	}
+}
