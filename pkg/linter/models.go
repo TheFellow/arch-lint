@@ -10,10 +10,9 @@ type GoPackage struct {
 
 // Violation represents a rule violation
 type Violation struct {
-	File    string
-	Import  string
-	Rule    string
-	Message string
+	File   string
+	Import string
+	Rule   string
 }
 
 func (v Violation) String() string {
