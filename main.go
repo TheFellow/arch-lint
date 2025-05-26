@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"slices"
+	"strings"
 
 	"github.com/urfave/cli/v3"
 
@@ -28,15 +30,17 @@ func main() {
 			}
 
 			violations, err := linter.Run(cfg)
+			if c.Bool("verbose") {
+				fmt.Println(linter.Processed.String())
+			}
 			if err != nil {
 				return err
 			}
 
-			if c.Bool("verbose") {
-				fmt.Println(linter.Processed.String())
-			}
-
 			if len(violations) > 0 {
+				slices.SortFunc(violations, func(a, b linter.Violation) int {
+					return strings.Compare(a.String(), b.String())
+				})
 				for _, v := range violations {
 					fmt.Println(v)
 				}
