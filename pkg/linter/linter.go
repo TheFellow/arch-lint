@@ -52,6 +52,7 @@ func Run(cfg *config.Config) ([]Violation, error) {
 			report("  file: %q\n", file)
 
 			// Parse the file to extract imports and package name
+			// TODO: Pull this from analysis packages instead of reparsing the file
 			fset := token.NewFileSet()
 			node, err := parser.ParseFile(fset, file, nil, parser.ImportsOnly)
 			if err != nil {
@@ -101,9 +102,10 @@ func Run(cfg *config.Config) ([]Violation, error) {
 
 				// If the import is forbidden and not in exceptions, add a violation
 				violations = append(violations, Violation{
-					Rule:   spec.Name,
-					File:   file,
-					Import: importPath,
+					Rule:    spec.Name,
+					File:    file,
+					Package: packagePath,
+					Import:  importPath,
 				})
 			}
 		}

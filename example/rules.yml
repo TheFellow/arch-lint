@@ -4,6 +4,7 @@ specs:
       include:
         - "example/alpha/**"
       exclude:
+        - "example/alpha/**/*_test"
         - "example/alpha/internal/exception/**"
     rules:
       forbid:
