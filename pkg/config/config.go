@@ -12,9 +12,9 @@ type Config struct {
 }
 
 type Spec struct {
-	Name  string `yaml:"name"`
-	Files Files  `yaml:"files"`
-	Rules Rules  `yaml:"rules"`
+	Name     string   `yaml:"name"`
+	Packages Packages `yaml:"packages"`
+	Rules    Rules    `yaml:"rules"`
 }
 
 type Rules struct {
@@ -23,6 +23,11 @@ type Rules struct {
 }
 
 type Files struct {
+	Include []string `yaml:"include"`
+	Exclude []string `yaml:"exclude"`
+}
+
+type Packages struct {
 	Include []string `yaml:"include"`
 	Exclude []string `yaml:"exclude"`
 }
@@ -40,7 +45,7 @@ func Load(path string) (*Config, error) {
 		return nil, fmt.Errorf("config must contain at least one spec")
 	}
 	for _, r := range cfg.Specs {
-		if len(r.Files.Include) == 0 {
+		if len(r.Packages.Include) == 0 {
 			return nil, fmt.Errorf("rule '%s' must specify 'packages'", r.Name)
 		}
 	}

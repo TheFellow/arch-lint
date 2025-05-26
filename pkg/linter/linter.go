@@ -42,7 +42,7 @@ func Run(cfg *config.Config) ([]Violation, error) {
 	for _, spec := range cfg.Specs {
 		report("spec: %s\n", spec.Name)
 
-		files, err := getFilesToCheck(spec.Files)
+		files, err := getFilesToCheck(fileToPackagePath, spec)
 		if err != nil {
 			return nil, err
 		}
@@ -167,41 +167,45 @@ func mapFilesToPackages(moduleName string, pkgs []*packages.Package) (map[string
 }
 
 // getFilesToCheck returns a list of files specified by Include not excluded by Exclude globs
-func getFilesToCheck(files config.Files) ([]string, error) {
-	repoFS := os.DirFS(".")
+func getFilesToCheck(fileToPackagePath map[string]string, spec config.Spec) ([]string, error) {
+	var filesToCheck []string
 
-	// Resolve include globs
 	var includedFiles []string
-	for _, includePattern := range files.Include {
-		matchingFiles, err := doublestar.Glob(repoFS, includePattern)
-		if err != nil {
-			return nil, fmt.Errorf("failed to resolve include glob pattern %s: %w", includePattern, err)
+	for _, includePattern := range spec.Packages.Include {
+		for file, pkg := range fileToPackagePath {
+			ok, err := doublestar.Match(includePattern, pkg)
+			if err != nil {
+				return nil, fmt.Errorf("failed to match include pattern %s: %w", includePattern, err)
+			}
+			if ok {
+				includedFiles = append(includedFiles, file)
+			}
 		}
-		includedFiles = append(includedFiles, matchingFiles...)
 	}
 
-	// Resolve exclude globs
 	var excludedFiles []string
-	for _, excludePattern := range files.Exclude {
-		matchingFiles, err := doublestar.Glob(repoFS, excludePattern)
-		if err != nil {
-			return nil, fmt.Errorf("failed to resolve exclude glob pattern %s: %w", excludePattern, err)
+	for _, excludePattern := range spec.Packages.Exclude {
+		for file, pkg := range fileToPackagePath {
+			ok, err := doublestar.Match(excludePattern, pkg)
+			if err != nil {
+				return nil, fmt.Errorf("failed to match include pattern %s: %w", excludePattern, err)
+			}
+			if ok {
+				excludedFiles = append(excludedFiles, file)
+			}
 		}
-		excludedFiles = append(excludedFiles, matchingFiles...)
 	}
 
-	// Collect the excluded files
 	excludedSet := make(map[string]struct{})
 	for _, file := range excludedFiles {
 		excludedSet[file] = struct{}{}
 	}
 
-	// Filter out excluded files from included scope
-	var filesToCheck []string
 	for _, file := range includedFiles {
 		if _, excluded := excludedSet[file]; !excluded {
 			filesToCheck = append(filesToCheck, file)
 		}
 	}
+
 	return filesToCheck, nil
 }

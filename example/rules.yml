@@ -1,11 +1,10 @@
 specs:
   - name: no-experimental-imports
-    files:
+    packages:
       include:
-        - "example/alpha/{*.go,**/*.go}"
+        - "example/alpha/**"
       exclude:
-        - "example/alpha/internal/exception/*.go"
-        - "example/alpha/**/*_test.go"
+        - "example/alpha/internal/exception/**"
     rules:
       forbid:
         - "example/alpha/experimental"
@@ -13,9 +12,9 @@ specs:
         - "example/alpha/internal/excluded"
 
   - name: app package from api only
-    files:
+    packages:
       include:
-        - "example/{beta,delta}/bookstore/{*.go,**/*.go}"
+        - "example/{beta,delta}/bookstore/**"
       exclude:
     rules:
       forbid:
@@ -25,9 +24,9 @@ specs:
         - "example/*/bookstore/app/{feature}/**"
 
   - name: app package from api or other features only
-    files:
+    packages:
       include:
-        - "example/epsilon/bookstore/{*.go,**/*.go}"
+        - "example/epsilon/bookstore/**"
       exclude:
     rules:
       forbid:
