@@ -8,7 +8,8 @@ import (
 )
 
 type Config struct {
-	Specs []Spec `yaml:"specs"`
+	IncludeTests bool   `yaml:"include_tests"`
+	Specs        []Spec `yaml:"specs"`
 }
 
 type Spec struct {

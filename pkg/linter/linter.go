@@ -28,7 +28,7 @@ func Run(cfg *config.Config) ([]Violation, error) {
 		return nil, err
 	}
 
-	pkgs, err := loadPackages(err)
+	pkgs, err := loadPackages(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -134,11 +134,14 @@ func getModuleName() (string, error) {
 }
 
 // loadPackages pulls in all package information using the analysis package
-func loadPackages(err error) ([]*packages.Package, error) {
+func loadPackages(cfg *config.Config) ([]*packages.Package, error) {
 	// Load package information using the analysis package
 	cfgs := &packages.Config{
-		Mode:  packages.NeedName | packages.NeedFiles | packages.NeedImports | packages.NeedForTest,
-		Tests: true,
+		Mode: packages.NeedName | packages.NeedFiles | packages.NeedImports,
+	}
+	if cfg.IncludeTests {
+		cfgs.Tests = true
+		cfgs.Mode |= packages.NeedForTest
 	}
 	pkgs, err := packages.Load(cfgs, "./...")
 	if err != nil {
