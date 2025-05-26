@@ -28,7 +28,7 @@ func Run(cfg *config.Config) ([]Violation, error) {
 		return nil, err
 	}
 
-	pkgs, err := loadPackages(err)
+	pkgs, err := loadPackages(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func Run(cfg *config.Config) ([]Violation, error) {
 	for _, spec := range cfg.Specs {
 		report("spec: %s\n", spec.Name)
 
-		files, err := getFilesToCheck(spec.Files)
+		files, err := getFilesToCheck(fileToPackagePath, spec)
 		if err != nil {
 			return nil, err
 		}
@@ -52,6 +52,7 @@ func Run(cfg *config.Config) ([]Violation, error) {
 			report("  file: %q\n", file)
 
 			// Parse the file to extract imports and package name
+			// TODO: Pull this from analysis packages instead of reparsing the file
 			fset := token.NewFileSet()
 			node, err := parser.ParseFile(fset, file, nil, parser.ImportsOnly)
 			if err != nil {
@@ -101,9 +102,10 @@ func Run(cfg *config.Config) ([]Violation, error) {
 
 				// If the import is forbidden and not in exceptions, add a violation
 				violations = append(violations, Violation{
-					Rule:   spec.Name,
-					File:   file,
-					Import: importPath,
+					Rule:    spec.Name,
+					File:    file,
+					Package: packagePath,
+					Import:  importPath,
 				})
 			}
 		}
@@ -132,11 +134,14 @@ func getModuleName() (string, error) {
 }
 
 // loadPackages pulls in all package information using the analysis package
-func loadPackages(err error) ([]*packages.Package, error) {
+func loadPackages(cfg *config.Config) ([]*packages.Package, error) {
 	// Load package information using the analysis package
 	cfgs := &packages.Config{
-		Mode:  packages.NeedName | packages.NeedFiles | packages.NeedImports | packages.NeedForTest,
-		Tests: true,
+		Mode: packages.NeedName | packages.NeedFiles | packages.NeedImports,
+	}
+	if cfg.IncludeTests {
+		cfgs.Tests = true
+		cfgs.Mode |= packages.NeedForTest
 	}
 	pkgs, err := packages.Load(cfgs, "./...")
 	if err != nil {
@@ -167,41 +172,45 @@ func mapFilesToPackages(moduleName string, pkgs []*packages.Package) (map[string
 }
 
 // getFilesToCheck returns a list of files specified by Include not excluded by Exclude globs
-func getFilesToCheck(files config.Files) ([]string, error) {
-	repoFS := os.DirFS(".")
+func getFilesToCheck(fileToPackagePath map[string]string, spec config.Spec) ([]string, error) {
+	var filesToCheck []string
 
-	// Resolve include globs
 	var includedFiles []string
-	for _, includePattern := range files.Include {
-		matchingFiles, err := doublestar.Glob(repoFS, includePattern)
-		if err != nil {
-			return nil, fmt.Errorf("failed to resolve include glob pattern %s: %w", includePattern, err)
+	for _, includePattern := range spec.Packages.Include {
+		for file, pkg := range fileToPackagePath {
+			ok, err := doublestar.Match(includePattern, pkg)
+			if err != nil {
+				return nil, fmt.Errorf("failed to match include pattern %s: %w", includePattern, err)
+			}
+			if ok {
+				includedFiles = append(includedFiles, file)
+			}
 		}
-		includedFiles = append(includedFiles, matchingFiles...)
 	}
 
-	// Resolve exclude globs
 	var excludedFiles []string
-	for _, excludePattern := range files.Exclude {
-		matchingFiles, err := doublestar.Glob(repoFS, excludePattern)
-		if err != nil {
-			return nil, fmt.Errorf("failed to resolve exclude glob pattern %s: %w", excludePattern, err)
+	for _, excludePattern := range spec.Packages.Exclude {
+		for file, pkg := range fileToPackagePath {
+			ok, err := doublestar.Match(excludePattern, pkg)
+			if err != nil {
+				return nil, fmt.Errorf("failed to match include pattern %s: %w", excludePattern, err)
+			}
+			if ok {
+				excludedFiles = append(excludedFiles, file)
+			}
 		}
-		excludedFiles = append(excludedFiles, matchingFiles...)
 	}
 
-	// Collect the excluded files
 	excludedSet := make(map[string]struct{})
 	for _, file := range excludedFiles {
 		excludedSet[file] = struct{}{}
 	}
 
-	// Filter out excluded files from included scope
-	var filesToCheck []string
 	for _, file := range includedFiles {
 		if _, excluded := excludedSet[file]; !excluded {
 			filesToCheck = append(filesToCheck, file)
 		}
 	}
+
 	return filesToCheck, nil
 }

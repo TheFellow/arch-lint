@@ -5,10 +5,9 @@ It helps maintain clean and consistent codebases by preventing unwanted dependen
 
 ## Features
 
+- Use glob patterns to include or exclude packages for analysis.
 - Define custom rules to forbid specific imports.
-- Use glob patterns to include or exclude files for analysis.
-- Support for exceptions to allow specific imports in restricted contexts.
-- Cross-platform compatibility with normalized file paths.
+- Support exceptions to allow forbidden imports in restricted contexts.
 
 ## Installation
 
@@ -32,11 +31,11 @@ Below is an example configuration:
 ```yaml
 specs:
   - name: no-experimental-imports
-    files:
+    packages:
       include:
-        - "example/alpha/{*.go,**/*.go}"
+        - "example/alpha/**"
       exclude:
-        - "example/alpha/internal/exception/*.go"
+        - "example/alpha/internal/exception/**"
     rules:
       forbid:
         - "example/alpha/experimental"
@@ -44,11 +43,13 @@ specs:
         - "example/alpha/internal/excluded"
 ```
 
+Note: By default test packages are excluded. This can be changed by setting `include_tests: true` on the configuration.
+
 ### Fields
 
 - **name**: A descriptive name for the rule.
-- **include**: Glob patterns specifying files to include in the analysis.
-- **exclude**: Glob patterns specifying files to exclude from the analysis.
+- **include**: Glob patterns specifying packages to include in the analysis.
+- **exclude**: Glob patterns specifying packages to exclude from the analysis.
 - **forbid**: Import paths that are forbidden.
 - **except**: Import paths that are exceptions to the forbidden rules.
 
@@ -66,10 +67,10 @@ An `except` patterns supports the same special cases as `forbid`, and one more
 
 The linter will:
 
-- For all files in scope, which is
-   - Files matching the `include` pattern(s)
-   - Files not matching the `exclude` pattern(s)
-- For each file matching a `forbid` pattern:
+- For all packages in scope, which is
+   - Packages matching the `include` pattern(s), except
+   - Packages matching the `exclude` pattern(s)
+- For each package matching a `forbid` pattern:
    - Report a linting error, unless
    - The import matches an `except` pattern
 
@@ -84,7 +85,7 @@ and exit with code 0.
 On the unhappy path the linter will output
 
 ```
-arch-lint: [<rule name>] "path/to/file.go" imports "forbidden/package"
+arch-lint: [<rule name>] file "path/to/file.go" (package path/to)  imports "forbidden/package"
 ```
 
 and exit with code 1.
@@ -93,11 +94,13 @@ and exit with code 1.
 
 ### Prerequisites
 
-- Go 1.20 or later
+- Go 1.23 or later
 
 ### Running Tests
 
-TODO: Write some tests lol
+```
+go test ./...
+```
 
 ## Contributing
 
