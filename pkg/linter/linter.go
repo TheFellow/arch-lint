@@ -61,7 +61,7 @@ func Run(cfg *config.Config) ([]Violation, error) {
 			// Get the full package path from the map
 			packagePath, ok := fileToPackagePath[file]
 			if !ok {
-				return nil, fmt.Errorf("package path not found for file %s", file)
+				return nil, fmt.Errorf("spec: %s: package path not found for file: %s", spec.Name, file)
 			}
 			report("   pkg: %q\n", packagePath)
 
@@ -135,7 +135,8 @@ func getModuleName() (string, error) {
 func loadPackages(err error) ([]*packages.Package, error) {
 	// Load package information using the analysis package
 	cfgs := &packages.Config{
-		Mode: packages.NeedName | packages.NeedFiles | packages.NeedImports,
+		Mode:  packages.NeedName | packages.NeedFiles | packages.NeedImports | packages.NeedForTest,
+		Tests: true,
 	}
 	pkgs, err := packages.Load(cfgs, "./...")
 	if err != nil {

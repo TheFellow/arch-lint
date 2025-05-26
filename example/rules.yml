@@ -5,6 +5,7 @@ specs:
         - "example/alpha/{*.go,**/*.go}"
       exclude:
         - "example/alpha/internal/exception/*.go"
+        - "example/alpha/**/*_test.go"
     rules:
       forbid:
         - "example/alpha/experimental"
