@@ -21,10 +21,12 @@ func TestArchLint(t *testing.T) {
 	testutil.Equals(t, err.Error(), "exit status 1")
 	gotOut, err := io.ReadAll(stdout)
 	testutil.Equals(t, err, nil)
-	testutil.Equals(t, strings.Trim(string(gotOut), "\n"), strings.Trim(wantOut, "\n"))
+	got := strings.Split(strings.Trim(string(gotOut), "\n"), "\n")
+	want := strings.Split(strings.Trim(wantOut, "\n"), "\n")
+	testutil.Equals(t, got, want)
 }
 
 var wantOut string = `
-arch-lint: [app package from api only] "example/beta/bookstore/app/books/books.go" imports "example/beta/bookstore/app/authors"
-arch-lint: [app package from api or other features only] "example/epsilon/bookstore/app/books/utils/bad.go" imports "example/epsilon/bookstore/app/books"
-arch-lint: [no-experimental-imports] "example/alpha/tester.go" imports "example/alpha/experimental"`
+arch-lint: [app package from api only] file "example/beta/bookstore/app/books/books.go" (package example/beta/bookstore/app/books) imports "example/beta/bookstore/app/authors"
+arch-lint: [app package from api or other features only] file "example/epsilon/bookstore/app/books/utils/bad.go" (package example/epsilon/bookstore/app/books/utils) imports "example/epsilon/bookstore/app/books"
+arch-lint: [no-experimental-imports] file "example/alpha/tester.go" (package example/alpha) imports "example/alpha/experimental"`
