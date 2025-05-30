@@ -85,7 +85,7 @@ and exit with code 0.
 On the unhappy path the linter will output
 
 ```
-arch-lint: [<rule name>] file "path/to/file.go" (package path/to)  imports "forbidden/package"
+arch-lint: [<rule name>] package "path/to"  imports "forbidden/package"
 ```
 
 and exit with code 1.
