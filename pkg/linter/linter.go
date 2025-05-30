@@ -3,8 +3,6 @@ package linter
 import (
 	"bufio"
 	"fmt"
-	"go/parser"
-	"go/token"
 	"os"
 	"strings"
 
@@ -33,50 +31,45 @@ func Run(cfg *config.Config) ([]Violation, error) {
 		return nil, err
 	}
 
-	fileToPackagePath, err := mapFilesToPackages(moduleName, pkgs)
-	if err != nil {
-		return nil, err
-	}
-
 	var violations []Violation
 	for _, spec := range cfg.Specs {
 		report("spec: %s\n", spec.Name)
 
-		files, err := getFilesToCheck(fileToPackagePath, spec)
-		if err != nil {
-			return nil, err
-		}
-		report("  %d files\n", len(files))
+		for _, pkg := range pkgs {
+			relPkgPath := strings.TrimPrefix(pkg.PkgPath, moduleName+"/")
 
-		for _, file := range files {
-			report("  file: %q\n", file)
-
-			// Parse the file to extract imports and package name
-			// TODO: Pull this from analysis packages instead of reparsing the file
-			fset := token.NewFileSet()
-			node, err := parser.ParseFile(fset, file, nil, parser.ImportsOnly)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse file %s: %w", file, err)
+			// Get packages described by the spec include/exclude patterns
+			included := false
+			for _, includePattern := range spec.Packages.Include {
+				if ok, _ := doublestar.Match(includePattern, relPkgPath); ok {
+					included = true
+					break
+				}
+			}
+			if !included {
+				continue
+			}
+			excluded := false
+			for _, excludePattern := range spec.Packages.Exclude {
+				if ok, _ := doublestar.Match(excludePattern, relPkgPath); ok {
+					excluded = true
+					break
+				}
+			}
+			if excluded {
+				continue
 			}
 
-			// Get the full package path from the map
-			packagePath, ok := fileToPackagePath[file]
-			if !ok {
-				return nil, fmt.Errorf("spec: %s: package path not found for file: %s", spec.Name, file)
-			}
-			report("   pkg: %q\n", packagePath)
+			// Validate imports of the package
+			report("  pkg: %q\n", relPkgPath)
+			for importPath := range pkg.Imports {
+				relImportPath := strings.TrimPrefix(importPath, moduleName+"/")
+				report("    import: %q\n", relImportPath)
 
-			for _, imp := range node.Imports {
-				// Extract the relative import path
-				importPath := strings.Trim(imp.Path.Value, `"`)
-				importPath = strings.TrimPrefix(importPath, moduleName+"/")
-				report("    import: %q\n", importPath)
-
-				// Check imports for forbidden rules
 				var capturedVars map[string]string
 				forbidden := false
 				for _, pat := range spec.Rules.Forbid {
-					if vars, ok := matchPattern(pat, importPath); ok {
+					if vars, ok := matchPattern(pat, relImportPath); ok {
 						report("      forbid: %q\n", pat)
 						capturedVars = vars
 						forbidden = true
@@ -87,10 +80,10 @@ func Run(cfg *config.Config) ([]Violation, error) {
 					continue
 				}
 
-				// Check if the source package is in exceptions
+				// Check exceptions
 				exception := false
 				for _, pat := range spec.Rules.Except {
-					if exceptRegex(pat, packagePath, capturedVars) {
+					if exceptRegex(pat, relPkgPath, capturedVars) {
 						report("      except: %q\n", pat)
 						exception = true
 						break
@@ -100,16 +93,13 @@ func Run(cfg *config.Config) ([]Violation, error) {
 					continue
 				}
 
-				// If the import is forbidden and not in exceptions, add a violation
 				violations = append(violations, Violation{
 					Rule:    spec.Name,
-					File:    file,
-					Package: packagePath,
-					Import:  importPath,
+					Package: relPkgPath,
+					Import:  relImportPath,
 				})
 			}
 		}
-
 	}
 
 	return violations, nil
@@ -148,69 +138,4 @@ func loadPackages(cfg *config.Config) ([]*packages.Package, error) {
 		return nil, fmt.Errorf("failed to load packages: %w", err)
 	}
 	return pkgs, nil
-}
-
-// mapFilesToPackages maps file paths to their relative package names. So
-//
-//	"github.com/TheFellow/example/alpha/tester.go" -> "example/alpha"
-func mapFilesToPackages(moduleName string, pkgs []*packages.Package) (map[string]string, error) {
-	// Map file paths to their full package paths
-	fileToPackagePath := make(map[string]string)
-	wd, err := os.Getwd()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get working directory: %w", err)
-	}
-
-	for _, pkg := range pkgs {
-		for _, fileAbs := range pkg.GoFiles {
-			file := strings.TrimPrefix(fileAbs, wd+"/")
-			pkgPath := strings.TrimPrefix(pkg.PkgPath, moduleName+"/")
-			fileToPackagePath[file] = pkgPath
-		}
-	}
-	return fileToPackagePath, nil
-}
-
-// getFilesToCheck returns a list of files specified by Include not excluded by Exclude globs
-func getFilesToCheck(fileToPackagePath map[string]string, spec config.Spec) ([]string, error) {
-	var filesToCheck []string
-
-	var includedFiles []string
-	for _, includePattern := range spec.Packages.Include {
-		for file, pkg := range fileToPackagePath {
-			ok, err := doublestar.Match(includePattern, pkg)
-			if err != nil {
-				return nil, fmt.Errorf("failed to match include pattern %s: %w", includePattern, err)
-			}
-			if ok {
-				includedFiles = append(includedFiles, file)
-			}
-		}
-	}
-
-	var excludedFiles []string
-	for _, excludePattern := range spec.Packages.Exclude {
-		for file, pkg := range fileToPackagePath {
-			ok, err := doublestar.Match(excludePattern, pkg)
-			if err != nil {
-				return nil, fmt.Errorf("failed to match include pattern %s: %w", excludePattern, err)
-			}
-			if ok {
-				excludedFiles = append(excludedFiles, file)
-			}
-		}
-	}
-
-	excludedSet := make(map[string]struct{})
-	for _, file := range excludedFiles {
-		excludedSet[file] = struct{}{}
-	}
-
-	for _, file := range includedFiles {
-		if _, excluded := excludedSet[file]; !excluded {
-			filesToCheck = append(filesToCheck, file)
-		}
-	}
-
-	return filesToCheck, nil
 }

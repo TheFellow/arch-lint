@@ -10,12 +10,11 @@ type GoPackage struct {
 
 // Violation represents a rule violation
 type Violation struct {
-	File    string
 	Package string
 	Import  string
 	Rule    string
 }
 
 func (v Violation) String() string {
-	return fmt.Sprintf("arch-lint: [%s] file %q (package %s) imports %q", v.Rule, v.File, v.Package, v.Import)
+	return fmt.Sprintf("arch-lint: [%s] package %q imports %q", v.Rule, v.Package, v.Import)
 }
