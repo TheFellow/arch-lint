@@ -36,12 +36,12 @@ func Run(cfg *config.Config) ([]Violation, error) {
 		report("spec: %s\n", spec.Name)
 
 		for _, pkg := range pkgs {
-			relPkgPath := strings.TrimPrefix(pkg.PkgPath, moduleName+"/")
+			currentPkg := strings.TrimPrefix(pkg.PkgPath, moduleName+"/")
 
 			// Get packages described by the spec include/exclude patterns
 			included := false
 			for _, includePattern := range spec.Packages.Include {
-				if ok, _ := doublestar.Match(includePattern, relPkgPath); ok {
+				if ok, _ := doublestar.Match(includePattern, currentPkg); ok {
 					included = true
 					break
 				}
@@ -51,7 +51,7 @@ func Run(cfg *config.Config) ([]Violation, error) {
 			}
 			excluded := false
 			for _, excludePattern := range spec.Packages.Exclude {
-				if ok, _ := doublestar.Match(excludePattern, relPkgPath); ok {
+				if ok, _ := doublestar.Match(excludePattern, currentPkg); ok {
 					excluded = true
 					break
 				}
@@ -60,16 +60,16 @@ func Run(cfg *config.Config) ([]Violation, error) {
 				continue
 			}
 
-			// Validate imports of the package
-			report("  pkg: %q\n", relPkgPath)
+			// Validate imports of the current package
+			report("  pkg: %q\n", currentPkg)
 			for importPath := range pkg.Imports {
-				relImportPath := strings.TrimPrefix(importPath, moduleName+"/")
-				report("    import: %q\n", relImportPath)
+				importedPkg := strings.TrimPrefix(importPath, moduleName+"/")
+				report("    import: %q\n", importedPkg)
 
 				var capturedVars map[string]string
 				forbidden := false
 				for _, pat := range spec.Rules.Forbid {
-					if vars, ok := matchPattern(pat, relImportPath); ok {
+					if vars, ok := matchPattern(pat, importedPkg); ok {
 						report("      forbid: %q\n", pat)
 						capturedVars = vars
 						forbidden = true
@@ -80,10 +80,10 @@ func Run(cfg *config.Config) ([]Violation, error) {
 					continue
 				}
 
-				// Check exceptions
+				// Check exceptions to see if current package is an exception
 				exception := false
 				for _, pat := range spec.Rules.Except {
-					if exceptRegex(pat, relPkgPath, capturedVars) {
+					if exceptRegex(pat, currentPkg, capturedVars) {
 						report("      except: %q\n", pat)
 						exception = true
 						break
@@ -93,10 +93,23 @@ func Run(cfg *config.Config) ([]Violation, error) {
 					continue
 				}
 
+				// Check exemptions to see if imported package is an exemption
+				exemption := false
+				for _, pat := range spec.Rules.Exempt {
+					if exceptRegex(pat, importedPkg, capturedVars) {
+						report("      exempt: %q\n", pat)
+						exemption = true
+						break
+					}
+				}
+				if exemption {
+					continue
+				}
+
 				violations = append(violations, Violation{
 					Rule:    spec.Name,
-					Package: relPkgPath,
-					Import:  relImportPath,
+					Package: currentPkg,
+					Import:  importedPkg,
 				})
 			}
 		}

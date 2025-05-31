@@ -21,6 +21,7 @@ type Spec struct {
 type Rules struct {
 	Forbid []string `yaml:"forbid"`
 	Except []string `yaml:"except"`
+	Exempt []string `yaml:"exempt"`
 }
 
 type Files struct {

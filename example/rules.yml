@@ -34,3 +34,15 @@ specs:
       except:
         - "example/epsilon/bookstore/api/**"
         - "example/epsilon/bookstore/app/{!feature}/**"
+
+  - name: no feature may import any other feature
+    packages:
+      include:
+        - "example/gamma/feature/*"
+      exclude:
+    rules:
+      forbid:
+        - "example/gamma/feature/*"
+      except:
+      exempt:
+        - "example/gamma/feature/B"
