@@ -49,6 +49,9 @@ func Load(path string) (*Config, error) {
 		if len(r.Packages.Include) == 0 {
 			return nil, fmt.Errorf("rule '%s' must specify 'packages'", r.Name)
 		}
+		if len(r.Rules.Forbid) == 0 {
+			return nil, fmt.Errorf("rule '%s' must specify 'forbid' rules", r.Name)
+		}
 	}
 	return &cfg, nil
 }
