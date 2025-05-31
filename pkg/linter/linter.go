@@ -93,7 +93,7 @@ func Run(cfg *config.Config) ([]Violation, error) {
 					continue
 				}
 
-				// Check exemptions to see if imported package is exempt
+				// Check exemptions to see if imported package is an exemption
 				exemption := false
 				for _, pat := range spec.Rules.Exempt {
 					if exceptRegex(pat, importedPkg, capturedVars) {

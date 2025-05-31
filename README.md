@@ -41,6 +41,8 @@ specs:
         - "example/alpha/experimental"
       except:
         - "example/alpha/internal/excluded"
+      exempt:
+        - "example/alpha/common"
 ```
 
 Note: By default test packages are excluded. This can be changed by setting `include_tests: true` on the configuration.
@@ -52,6 +54,7 @@ Note: By default test packages are excluded. This can be changed by setting `inc
 - **exclude**: Glob patterns specifying packages to exclude from the analysis.
 - **forbid**: Import paths that are forbidden.
 - **except**: Import paths that are exceptions to the forbidden rules.
+- **exempt**: Import paths that are exempt from `forbid` rules.
 
 A `forbid` pattern supports a few special cases:
 - `*`: Matches a single path segment.
@@ -64,15 +67,30 @@ An `except` patterns supports the same special cases as `forbid`, and one more
 - `{variable}`: Matches this path segment when its value matches the one captured in the `forbid` pattern.
 - `{!variable}`: Matches this path segment when its value **does not** match the one captured in the `forbid` pattern.
 
+An `exempt` pattern supports the same special cases as `forbid`, and one more
+- `*`: Matches a single path segment.
+- `**`: Matches multiple path segments, including none.
+- `{variable}`: Matches a single path segment and captures it as a named variable.
+- `{!variable}`: Matches this path segment when its value **does not** match the one captured in the `forbid` pattern.
 
-The linter will:
+### How it works
 
-- For all packages in scope, which is
-   - Packages matching the `include` pattern(s), except
-   - Packages matching the `exclude` pattern(s)
-- For each package matching a `forbid` pattern:
-   - Report a linting error, unless
-   - The import matches an `except` pattern
+First all packages in scope for analysis are collected.
+That is, all packages that match the `include` glob patterns and do not match the `exclude` glob patterns.
+
+Then each package in scope is analyzed.
+During analysis there are two packages under consideration:
+- The package being analyzed (the `current` package).
+- The package being imported (the `imported` package).
+
+The `current` package is forbidden from importing the `imported` package
+if the `imported` package matches a `forbid` pattern.
+
+Once forbidden, the `imported` package will be allowed if:
+- The `current` package matches an `except` pattern.
+- The `imported` package matches an `exempt` pattern.
+
+This provides the flexibility to allow certain imports based on either the importer or the importee.
 
 ## Output
 
