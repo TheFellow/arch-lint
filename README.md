@@ -61,7 +61,7 @@ A `forbid` pattern supports a few special cases:
 - `**`: Matches multiple path segments, including none.
 - `{variable}`: Matches a single path segment and captures it as a named variable.
 
-An `except` patterns supports the same special cases as `forbid`, and one more
+An `except` pattern supports the same special cases as `forbid`, and one more
 - `*`: Matches a single path segment.
 - `**`: Matches multiple path segments, including none.
 - `{variable}`: Matches this path segment when its value matches the one captured in the `forbid` pattern.
