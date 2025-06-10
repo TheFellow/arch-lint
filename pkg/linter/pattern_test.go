@@ -8,6 +8,7 @@ import (
 )
 
 func TestMatchPattern(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		pattern   string
@@ -87,16 +88,18 @@ func TestMatchPattern(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			gotVars, gotMatch := matchPattern(tt.pattern, tt.path)
-			testutil.Equals(t, gotMatch, tt.wantMatch)
-			testutil.Equals(t, gotVars, tt.wantVars, cmpopts.EquateEmpty())
-		})
+       for _, tt := range tests {
+               t.Run(tt.name, func(t *testing.T) {
+                       t.Parallel()
+                       gotVars, gotMatch := matchPattern(tt.pattern, tt.path)
+                       testutil.Equals(t, gotMatch, tt.wantMatch)
+                       testutil.Equals(t, gotVars, tt.wantVars, cmpopts.EquateEmpty())
+               })
 	}
 }
 
 func TestExceptRegex(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		pattern   string
@@ -162,10 +165,11 @@ func TestExceptRegex(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			gotMatch := exceptRegex(tt.pattern, tt.path, tt.vars)
-			testutil.Equals(t, gotMatch, tt.wantMatch)
-		})
+       for _, tt := range tests {
+               t.Run(tt.name, func(t *testing.T) {
+                       t.Parallel()
+                       gotMatch := exceptRegex(tt.pattern, tt.path, tt.vars)
+                       testutil.Equals(t, gotMatch, tt.wantMatch)
+               })
 	}
 }
