@@ -29,4 +29,6 @@ func TestArchLint(t *testing.T) {
 var wantOut string = `
 arch-lint: [app package from api only] package "example/beta/bookstore/app/books" imports "example/beta/bookstore/app/authors"
 arch-lint: [app package from api or other features only] package "example/epsilon/bookstore/app/books/utils" imports "example/epsilon/bookstore/app/books"
+arch-lint: [clean architecture - domain independent] package "example/zeta/domain" imports "example/zeta/usecase"
+arch-lint: [clean architecture - usecase without infrastructure] package "example/zeta/usecase" imports "example/zeta/infrastructure/db"
 arch-lint: [no-experimental-imports] package "example/alpha" imports "example/alpha/experimental"`

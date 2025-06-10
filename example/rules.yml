@@ -46,3 +46,23 @@ specs:
       except:
       exempt:
         - "example/gamma/feature/B"
+
+  - name: clean architecture - domain independent
+    packages:
+      include:
+        - "example/zeta/domain/**"
+      exclude:
+    rules:
+      forbid:
+        - "**"
+      except:
+
+  - name: clean architecture - usecase without infrastructure
+    packages:
+      include:
+        - "example/zeta/usecase/**"
+      exclude:
+    rules:
+      forbid:
+        - "example/zeta/infrastructure/**"
+      except:
