@@ -47,6 +47,8 @@ specs:
 
 Note: By default test packages are excluded. This can be changed by setting `include_tests: true` on the configuration.
 
+Configuration files are validated against a built-in YAML schema before the linter runs. Invalid files will cause arch-lint to exit with an error.
+
 ### Fields
 
 - **name**: A descriptive name for the rule.
