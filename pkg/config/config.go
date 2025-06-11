@@ -3,9 +3,15 @@ package config
 import (
 	"fmt"
 	"os"
+	"strings"
 
+	_ "embed"
 	"github.com/goccy/go-yaml"
+	"github.com/xeipuuv/gojsonschema"
 )
+
+//go:embed schema.yml
+var schemaData []byte
 
 type Config struct {
 	IncludeTests bool   `yaml:"include_tests"`
@@ -39,6 +45,9 @@ func Load(path string) (*Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config: %w", err)
 	}
+	if err := validateSchema(data); err != nil {
+		return nil, fmt.Errorf("config schema validation failed: %w", err)
+	}
 	var cfg Config
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
@@ -55,4 +64,32 @@ func Load(path string) (*Config, error) {
 		}
 	}
 	return &cfg, nil
+}
+
+func validateSchema(data []byte) error {
+	schemaJSON, err := yaml.YAMLToJSON(schemaData)
+	if err != nil {
+		return err
+	}
+	docJSON, err := yaml.YAMLToJSON(data)
+	if err != nil {
+		return err
+	}
+	schemaLoader := gojsonschema.NewBytesLoader(schemaJSON)
+	docLoader := gojsonschema.NewBytesLoader(docJSON)
+	result, err := gojsonschema.Validate(schemaLoader, docLoader)
+	if err != nil {
+		return err
+	}
+	if !result.Valid() {
+		var sb strings.Builder
+		for i, e := range result.Errors() {
+			if i > 0 {
+				sb.WriteString("; ")
+			}
+			sb.WriteString(e.String())
+		}
+		return fmt.Errorf(sb.String())
+	}
+	return nil
 }
