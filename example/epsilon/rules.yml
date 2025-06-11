@@ -1,8 +1,8 @@
 specs:
   - name: app package from api or other features only
-    files:
+    packages:
       include:
-        - "example/epsilon/bookstore/{*.go,**/*.go}"
+        - "example/epsilon/bookstore/**"
       exclude:
     rules:
       forbid:
@@ -10,3 +10,4 @@ specs:
       except:
         - "example/epsilon/bookstore/api/**"
         - "example/epsilon/bookstore/app/{!feature}/**"
+

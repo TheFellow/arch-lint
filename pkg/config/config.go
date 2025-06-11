@@ -24,11 +24,6 @@ type Rules struct {
 	Exempt []string `yaml:"exempt"`
 }
 
-type Files struct {
-	Include []string `yaml:"include"`
-	Exclude []string `yaml:"exclude"`
-}
-
 type Packages struct {
 	Include []string `yaml:"include"`
 	Exclude []string `yaml:"exclude"`
