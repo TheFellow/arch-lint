@@ -57,10 +57,10 @@ specs:
         - "**"
       except:
 
-  - name: clean architecture - usecase without infrastructure
+  - name: clean architecture - controllers without infrastructure
     packages:
       include:
-        - "example/zeta/usecase/**"
+        - "example/zeta/controllers/**"
       exclude:
     rules:
       forbid:
