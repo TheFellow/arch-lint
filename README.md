@@ -111,6 +111,65 @@ arch-lint: [<rule name>] package "path/to"  imports "forbidden/package"
 
 and exit with code 1.
 
+## go/analysis Integration
+
+arch-lint also ships as a `go/analysis` Analyzer, which means it can run as a standalone singlechecker binary or integrate directly into golangci-lint.
+
+### Standalone Singlechecker
+
+Build and run the singlechecker binary:
+
+```bash
+go build -o arch-lint-checker ./cmd/arch-lint
+./arch-lint-checker -config=.arch-lint.yml ./...
+```
+
+The singlechecker supports all standard `go/analysis` flags (`-json`, `-c=N`, `-test=false`, etc.). Config is resolved by walking up the directory tree for `.arch-lint.yml`, or you can pass `-config` explicitly.
+
+### golangci-lint Module Plugin
+
+arch-lint can be integrated into golangci-lint v2 as a [module plugin](https://golangci-lint.run/plugins/module-plugins/). This compiles arch-lint into a custom golangci-lint build (no fragile `.so` plugins needed).
+
+1. Create a `.custom-gcl.yml` in your project:
+
+```yaml
+version: v2.0.0
+plugins:
+  - module: "github.com/TheFellow/arch-lint"
+    import: "github.com/TheFellow/arch-lint/plugin"
+    version: latest
+```
+
+2. Build your custom golangci-lint:
+
+```bash
+golangci-lint custom
+```
+
+3. Configure `.golangci.yml`:
+
+```yaml
+linters:
+  enable:
+    - archlint
+
+linters-settings:
+  custom:
+    archlint:
+      type: module
+      description: Enforces architectural import boundaries
+      settings:
+        config: ".arch-lint.yml"
+```
+
+4. Run:
+
+```bash
+./custom-gcl run ./...
+```
+
+The plugin exposes the same Analyzer that the singlechecker uses, so behavior is identical.
+
 ## Development
 
 ### Prerequisites

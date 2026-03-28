@@ -1,11 +1,12 @@
 package domain
 
-import "github.com/TheFellow/arch-lint/example/zeta/util"
+import "github.com/TheFellow/arch-lint/example/zeta/usecase"
 
 type Entity struct {
 }
 
+var _ = usecase.Service{}
+
 func (e Entity) Validate() (bool, error) {
-	util.SomeHelper() // domain should have no dependencies
 	return true, nil
 }

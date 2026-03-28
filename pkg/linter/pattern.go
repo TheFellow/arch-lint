@@ -6,8 +6,8 @@ import (
 	"strings"
 )
 
-func matchPattern(pattern, path string) (map[string]string, bool) {
-	regexPattern := escapePattern(pattern)
+func MatchPattern(pattern, path string) (map[string]string, bool) {
+	regexPattern := EscapePattern(pattern)
 
 	re, err := regexp.Compile(regexPattern)
 	if err != nil {
@@ -30,7 +30,7 @@ func matchPattern(pattern, path string) (map[string]string, bool) {
 	return vars, true
 }
 
-func escapePattern(pattern string) string {
+func EscapePattern(pattern string) string {
 	// Split the pattern into segments
 	segments := strings.Split(pattern, "/")
 	for i, segment := range segments {
@@ -67,7 +67,7 @@ func escapePattern(pattern string) string {
 	return regexPattern
 }
 
-func replaceVariables(pattern string, vars map[string]string) string {
+func ReplaceVariables(pattern string, vars map[string]string) string {
 	segments := strings.Split(pattern, "/")
 	for i, segment := range segments {
 		for key := range vars {
@@ -82,9 +82,9 @@ func replaceVariables(pattern string, vars map[string]string) string {
 	return strings.Join(segments, "/")
 }
 
-func exceptRegex(pattern, path string, vars map[string]string) bool {
+func ExceptRegex(pattern, path string, vars map[string]string) bool {
 	// Replace variables in the pattern
-	regexPattern := escapePattern(replaceVariables(pattern, vars))
+	regexPattern := EscapePattern(ReplaceVariables(pattern, vars))
 
 	// Compile the regex
 	re, err := regexp.Compile(regexPattern)

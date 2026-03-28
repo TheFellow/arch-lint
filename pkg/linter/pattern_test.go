@@ -88,13 +88,13 @@ func TestMatchPattern(t *testing.T) {
 		},
 	}
 
-       for _, tt := range tests {
-               t.Run(tt.name, func(t *testing.T) {
-                       t.Parallel()
-                       gotVars, gotMatch := matchPattern(tt.pattern, tt.path)
-                       testutil.Equals(t, gotMatch, tt.wantMatch)
-                       testutil.Equals(t, gotVars, tt.wantVars, cmpopts.EquateEmpty())
-               })
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			gotVars, gotMatch := MatchPattern(tt.pattern, tt.path)
+			testutil.Equals(t, gotMatch, tt.wantMatch)
+			testutil.Equals(t, gotVars, tt.wantVars, cmpopts.EquateEmpty())
+		})
 	}
 }
 
@@ -165,11 +165,11 @@ func TestExceptRegex(t *testing.T) {
 		},
 	}
 
-       for _, tt := range tests {
-               t.Run(tt.name, func(t *testing.T) {
-                       t.Parallel()
-                       gotMatch := exceptRegex(tt.pattern, tt.path, tt.vars)
-                       testutil.Equals(t, gotMatch, tt.wantMatch)
-               })
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			gotMatch := ExceptRegex(tt.pattern, tt.path, tt.vars)
+			testutil.Equals(t, gotMatch, tt.wantMatch)
+		})
 	}
 }

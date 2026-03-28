@@ -1,0 +1,16 @@
+specs:
+  - name: clean architecture
+    packages:
+      include:
+        - "domain/**"
+    rules:
+      forbid:
+        - "**"
+
+  - name: controllers without infrastructure
+    packages:
+      include:
+        - "controllers/**"
+    rules:
+      forbid:
+        - "infrastructure/**"
