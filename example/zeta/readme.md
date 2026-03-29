@@ -13,7 +13,7 @@
 
 **Current Violations Detected by arch-lint:**
 1. **Controllers → Infrastructure**: `controllers/controller.go` directly imports `infrastructure/db`, bypassing the use case layer
-2. **Domain → Util**: `domain/entity.go` imports `util`, violating domain independence
+2. **Domain → Usecase**: `domain/entity.go` imports `usecase`, violating domain independence
 
 
 ```mermaid
@@ -49,7 +49,7 @@ graph TD
 
 %% Current Violations (what arch-lint catches)
     C -.->|❌ VIOLATION<br/>controllers → infrastructure| I
-    D -.->|❌ VIOLATION<br/>domain → util| U
+    D -.->|❌ VIOLATION<br/>domain → usecase| UC
 
 
 ```
