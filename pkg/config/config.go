@@ -1,11 +1,13 @@
 package config
 
 import (
+	_ "embed"
 	"fmt"
 	"os"
 	"strings"
 
-	_ "embed"
+	"github.com/TheFellow/arch-lint/internal/rulepattern"
+	"github.com/bmatcuk/doublestar/v4"
 	"github.com/goccy/go-yaml"
 	"github.com/xeipuuv/gojsonschema"
 )
@@ -56,6 +58,30 @@ func Load(path string) (*Config, error) {
 		}
 		if len(r.Rules.Forbid) == 0 {
 			return nil, fmt.Errorf("rule '%s' must specify 'forbid' rules", r.Name)
+		}
+		for _, field := range []struct {
+			name     string
+			patterns []string
+		}{
+			{"packages.include", r.Packages.Include}, {"packages.exclude", r.Packages.Exclude},
+		} {
+			for _, pattern := range field.patterns {
+				if !doublestar.ValidatePattern(pattern) {
+					return nil, fmt.Errorf("spec %q %s pattern %q: invalid glob", r.Name, field.name, pattern)
+				}
+			}
+		}
+		for _, field := range []struct {
+			name     string
+			patterns []string
+		}{
+			{"forbid", r.Rules.Forbid}, {"except", r.Rules.Except}, {"exempt", r.Rules.Exempt},
+		} {
+			for _, pattern := range field.patterns {
+				if _, err := rulepattern.Regex(pattern, field.name != "forbid"); err != nil {
+					return nil, fmt.Errorf("spec %q rules.%s pattern %q: %w", r.Name, field.name, pattern, err)
+				}
+			}
 		}
 	}
 	return &cfg, nil
