@@ -173,3 +173,42 @@ func TestExceptRegex(t *testing.T) {
 		})
 	}
 }
+
+func TestPatternBoundariesAndLiterals(t *testing.T) {
+	tests := []struct {
+		pattern, path string
+		want          bool
+	}{
+		{"a.c/x", "a.c/x", true},
+		{"a.c/x", "abc/x", false},
+		{"a+c/(x)", "a+c/(x)", true},
+		{"a+c/(x)", "aac/x", false},
+		{"foo/**", "foo", true},
+		{"foo/**", "foo/bar/baz", true},
+		{"foo/**", "foobar", false},
+		{"foo/**", "foo-v2/bar", false},
+		{"foo/**/bar", "foo/bar", true},
+		{"foo/**/bar", "foo/a/b/bar", true},
+		{"**/bar", "bar", true},
+		{"**/bar", "foo/bar", true},
+		{"example/{beta,delta}/**", "example/beta", true},
+		{"example/{beta,delta}/**", "example/delta/x", true},
+		{"example/{beta,delta}/**", "example/gamma/x", false},
+		{"{a.c,b+d}/x", "abc/x", false},
+		{"{a.c,b+d}/x", "b+d/x", true},
+		{"**", "fmt", true},
+		{"foo/**/**", "foo", true},
+		{"foo/**/**/bar", "foo/bar", true},
+		{"**/**", "fmt", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.pattern+":"+tt.path, func(t *testing.T) {
+			_, got := MatchPattern(tt.pattern, tt.path)
+			testutil.Equals(t, got, tt.want)
+			testutil.Equals(t, ExceptRegex(tt.pattern, tt.path, nil), tt.want)
+		})
+	}
+	vars, ok := MatchPattern("{beta,delta}/{domain}/**", "delta/orders/model")
+	testutil.Equals(t, ok, true)
+	testutil.Equals(t, vars, map[string]string{"domain": "orders"})
+}

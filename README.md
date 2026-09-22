@@ -25,7 +25,7 @@ Run the linter with a configuration file:
 
 ### Configuration
 
-The linter uses a `rules.yml` file to define the rules for your project.
+The linter reads the file selected by `-config` (default: `-config=config.yaml`) to define the rules for your project.
 Below is an example configuration:
 
 ```yaml
@@ -45,7 +45,9 @@ specs:
         - "example/alpha/common"
 ```
 
-Note: By default test packages are excluded. This can be changed by setting `include_tests: true` on the configuration.
+Set `include_tests: true` to enable test loading in the original CLI. In the analyzer,
+`include_tests: false` skips packages whose import path or package name ends in
+`_test`; it does not filter individual in-package `_test.go` files from a pass.
 
 Configuration files are validated against a built-in YAML schema before the linter runs.
 Invalid files will cause arch-lint to exit with an error.
@@ -56,13 +58,25 @@ Invalid files will cause arch-lint to exit with an error.
 - **include**: Glob patterns specifying packages to include in the analysis.
 - **exclude**: Glob patterns specifying packages to exclude from the analysis.
 - **forbid**: Import paths that are forbidden.
-- **except**: Import paths that are exceptions to the forbidden rules.
+- **except**: Importer package paths allowed to use forbidden imports.
 - **exempt**: Import paths that are exempt from `forbid` rules.
+
+`packages.include` and `packages.exclude` use doublestar globs, including brace
+alternatives such as `example/{beta,delta}/**`. Rule patterns (`forbid`, `except`,
+and `exempt`) use a separate, capture-aware syntax; they are not regular expressions
+or the full doublestar glob language. Dots and other literal characters match exactly.
 
 A `forbid` pattern supports a few special cases:
 - `*`: Matches a single path segment.
 - `**`: Matches multiple path segments, including none.
 - `{variable}`: Matches a single path segment and captures it as a named variable.
+
+All three rule fields also support whole-segment literal alternatives such as
+`{beta,delta}`. `*`, `**`, captures, and alternatives must occupy complete segments.
+`foo/**` matches `foo` and its descendants, but never `foobar` or `foo-v2`.
+`foo/**/bar` also matches `foo/bar`. Variable names use letters, digits, and
+underscores, cannot start with a digit, and must be unique within a pattern.
+Malformed rule patterns and package globs are rejected when loading configuration.
 
 An `except` pattern supports the same special cases as `forbid`, and one more
 - `*`: Matches a single path segment.
@@ -73,7 +87,7 @@ An `except` pattern supports the same special cases as `forbid`, and one more
 An `exempt` pattern supports the same special cases as `forbid`, and one more
 - `*`: Matches a single path segment.
 - `**`: Matches multiple path segments, including none.
-- `{variable}`: Matches a single path segment and captures it as a named variable.
+- `{variable}`: Matches the value captured in the `forbid` pattern.
 - `{!variable}`: Matches this path segment when its value **does not** match the one captured in the `forbid` pattern.
 
 ### How it works
@@ -93,7 +107,14 @@ Once forbidden, the `imported` package will be allowed if:
 - The `current` package matches an `except` pattern.
 - The `imported` package matches an `exempt` pattern.
 
-This provides the flexibility to allow certain imports based on either the importer or the importee.
+Exceptions are spec-wide: an exception may use captures from any matching
+`forbid` pattern, so reordering `forbid` entries does not change the result.
+Each exception is evaluated against one forbid match at a time; captures from
+separate patterns are not merged. An exception with an unbound variable does
+not match, including negated references such as `{!domain}`.
+
+`forbid: ["**"]` includes standard-library imports such as `fmt`. Use `exempt`
+entries to allow particular imports, or scope `forbid` to a narrower path.
 
 ## Output
 
@@ -113,7 +134,10 @@ and exit with code 1.
 
 ## go/analysis Integration
 
-arch-lint also ships as a `go/analysis` Analyzer, which means it can run as a standalone singlechecker binary or integrate directly into golangci-lint.
+Since v0.0.13 (commit `7476878`), arch-lint also ships as a `go/analysis` Analyzer, which means it can run as a standalone singlechecker binary or integrate directly into golangci-lint.
+
+Version v0.0.12 (`f31600a`) predates this integration and has neither the
+singlechecker nor the golangci-lint module plugin.
 
 ### Standalone Singlechecker
 

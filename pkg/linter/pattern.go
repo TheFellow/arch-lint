@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+
+	"github.com/TheFellow/arch-lint/internal/rulepattern"
 )
 
 func MatchPattern(pattern, path string) (map[string]string, bool) {
@@ -31,39 +33,11 @@ func MatchPattern(pattern, path string) (map[string]string, bool) {
 }
 
 func EscapePattern(pattern string) string {
-	// Split the pattern into segments
-	segments := strings.Split(pattern, "/")
-	for i, segment := range segments {
-		// Handle variables
-		if strings.HasPrefix(segment, "{") && strings.HasSuffix(segment, "}") {
-			// Convert {var} to (?P<var>[^/]+)
-			segment = fmt.Sprintf("(?P<%s>[^/]+)", segment[1:len(segment)-1])
-		}
-
-		// Handle single-level wildcards
-		if segment == "*" {
-			// Convert * to [^/]+
-			segment = "[^/]+"
-		}
-
-		// Handle multi-level wildcards
-		if segment == "**" {
-			// Convert ** to .*
-			segment = ".*"
-		}
-
-		// Update the segment
-		segments[i] = segment
+	regexPattern, err := rulepattern.Regex(pattern, false)
+	if err != nil {
+		// Keep the exported helper's signature; invalid patterns cannot match.
+		return "(?!)"
 	}
-
-	// Join the segments back together
-	regexPattern := strings.Join(segments, "/")
-	// Special case for /** at the end of the pattern
-	if strings.HasSuffix(regexPattern, "/.*") {
-		// If the pattern ends with a wildcard, allow empty string at the end
-		regexPattern = strings.TrimSuffix(regexPattern, "/.*") + "/?.*"
-	}
-	regexPattern = "^" + regexPattern + "$"
 	return regexPattern
 }
 
@@ -83,6 +57,15 @@ func ReplaceVariables(pattern string, vars map[string]string) string {
 }
 
 func ExceptRegex(pattern, path string, vars map[string]string) bool {
+	// Every reference must be bound by this particular forbid match.
+	for _, segment := range strings.Split(pattern, "/") {
+		if strings.HasPrefix(segment, "{") && strings.HasSuffix(segment, "}") && !strings.Contains(segment, ",") {
+			name := strings.TrimPrefix(segment[1:len(segment)-1], "!")
+			if _, ok := vars[name]; !ok {
+				return false
+			}
+		}
+	}
 	// Replace variables in the pattern
 	regexPattern := EscapePattern(ReplaceVariables(pattern, vars))
 

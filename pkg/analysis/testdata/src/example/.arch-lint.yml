@@ -14,3 +14,29 @@ specs:
     rules:
       forbid:
         - "infrastructure/**"
+
+  - name: pattern boundaries
+    packages:
+      include: ["patterns/{beta,delta}/**"]
+    rules:
+      forbid: ["patterns/orders/**"]
+
+  - name: literal dots
+    packages:
+      include: ["patterns/beta/**"]
+    rules:
+      forbid: ["patterns/order./**"]
+
+  - name: captured exceptions
+    packages:
+      include: ["patterns/orders/**", "patterns/payments/**"]
+    rules:
+      forbid: ["**", "patterns/{domain}/**"]
+      except: ["patterns/{domain}/**"]
+      exempt: ["fmt"]
+
+  - name: rule alternatives
+    packages:
+      include: ["patterns/delta/**"]
+    rules:
+      forbid: ["patterns/{orders,payments}/**"]
